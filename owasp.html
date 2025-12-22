@@ -1,0 +1,1788 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>DRY Lens + Architecture Context (OWASP)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      --bg:#0b0f17;
+      --surface: rgba(255,255,255,.04);
+      --surface2: rgba(255,255,255,.055);
+      --surface3: rgba(255,255,255,.075);
+      --ink:#f2f5ff;
+      --muted: rgba(242,245,255,.72);
+      --muted2: rgba(242,245,255,.60);
+      --border: rgba(242,245,255,.10);
+      --border2: rgba(242,245,255,.14);
+      --shadow: 0 18px 60px rgba(0,0,0,.45);
+      --shadow2: 0 12px 36px rgba(0,0,0,.35);
+      --accent:#1dd6c5;
+      --accent2:#7c3aed;
+      --accentInk:#021b18;
+      --radius:16px;
+      --radius2:12px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      --display: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+    }
+
+    *{box-sizing:border-box}
+    body{margin:0;font-family:var(--sans);color:var(--ink);
+      background:
+        radial-gradient(900px 520px at 8% -10%, rgba(124,58,237,.25), transparent 60%),
+        radial-gradient(900px 520px at 90% -10%, rgba(29,214,197,.22), transparent 58%),
+        radial-gradient(900px 520px at 50% 115%, rgba(124,58,237,.20), transparent 62%),
+        linear-gradient(180deg, rgba(7,10,18,1), rgba(11,15,23,1));
+      min-height:100vh;}
+
+    .wrap{max-width:1280px;margin:0 auto;padding:18px 18px 44px}
+
+    /* Top bar / brand */
+    .top{
+      background: linear-gradient(180deg, rgba(255,255,255,.92), rgba(255,255,255,.86));
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      padding:18px 18px 16px;
+      backdrop-filter: blur(10px);
+    }
+
+    .brandRow{
+      display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;
+      margin-bottom:10px;
+    }
+    .brand{
+      display:flex;align-items:center;gap:10px;min-width:260px;
+    }
+    .mark{
+      width:34px;height:34px;border-radius:10px;
+      background: linear-gradient(135deg, rgba(11,15,26,.95), rgba(11,15,26,.78));
+      position:relative;
+      box-shadow: 0 10px 24px rgba(11,15,26,.12);
+      border:1px solid rgba(11,15,26,.10);
+    }
+    .mark::after{
+      content:"";
+      position:absolute;inset:8px 9px 8px 9px;
+      border-radius:8px;
+      border:2px solid rgba(21,196,179,.92);
+      box-shadow: inset 0 0 0 2px rgba(21,196,179,.10);
+    }
+    .brandText{display:flex;flex-direction:column;gap:2px}
+    .brandName{font-weight:800;letter-spacing:.2px;font-size:14px}
+    .brandSub{color:var(--muted);font-size:12px}
+
+    h1{margin:0;font-size:22px;letter-spacing:.2px}
+    .tagline{margin-top:6px;color:var(--muted);max-width:92ch;line-height:1.45}
+
+    .pillrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+    .pill{
+      font-size:12px; padding:7px 10px; border-radius:999px;
+      background: rgba(11,15,26,.04);
+      border:1px solid var(--border);
+      color:var(--muted);
+      user-select:none;
+    }
+    .pill strong{color:var(--ink); font-weight:700}
+
+    .ctaRow{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .cta{
+      font-size:12px; padding:10px 12px; border-radius:999px;
+      border:1px solid var(--border2);
+      background: var(--surface);
+      color:var(--ink);
+      cursor:pointer;
+      transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+      box-shadow: var(--shadow2);
+      text-decoration:none;
+      display:inline-flex;align-items:center;gap:8px;
+    }
+    .cta:hover{transform:translateY(-1px);border-color: rgba(21,196,179,.45)}
+    .cta.primary{
+      background: linear-gradient(180deg, rgba(21,196,179,.95), rgba(21,196,179,.85));
+      border-color: rgba(21,196,179,.55);
+      color: var(--accentInk);
+    }
+    .cta.primary:hover{border-color: rgba(21,196,179,.75)}
+    .cta .dot{width:8px;height:8px;border-radius:50%;background:rgba(11,15,26,.65)}
+    .cta.primary .dot{background:rgba(5,32,30,.75)}
+
+    .controls{
+      margin-top:14px;
+      display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:space-between;
+    }
+    .leftControls,.rightControls{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
+
+    .control{
+      display:flex; gap:8px; align-items:center;
+      padding:9px 12px; border:1px solid var(--border); border-radius:999px;
+      background: rgba(255,255,255,.85);
+      box-shadow: 0 10px 24px rgba(11,15,26,.06);
+    }
+    label{font-size:12px;color:var(--muted)}
+    select{
+      background:transparent;color:var(--ink);border:0; outline:none;
+      font-size:12px; font-family:var(--sans);
+    }
+
+    .toggle{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);user-select:none}
+    .switch{width:42px;height:24px;border-radius:999px;background:rgba(11,15,26,.10);border:1px solid var(--border);position:relative;cursor:pointer;transition:.18s}
+    .switch::after{content:"";width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:2px;left:2px;transition:transform .18s ease}
+    .switch.on{background:rgba(21,196,179,.30);border-color:rgba(21,196,179,.45)}
+    .switch.on::after{transform:translateX(18px);background:#fff}
+
+    .btn{
+      font-size:12px; padding:9px 12px; border-radius:999px;
+      border:1px solid var(--border2);
+      background: rgba(255,255,255,.85);
+      color:var(--ink);
+      cursor:pointer;
+      transition: transform .15s ease, border-color .15s ease, box-shadow .15s ease;
+      box-shadow: 0 10px 24px rgba(11,15,26,.06);
+    }
+    .btn:hover{transform:translateY(-1px);border-color: rgba(21,196,179,.45)}
+
+    .grid{
+      margin-top:16px;
+      display:grid;
+      grid-template-columns: 420px 1fr;
+      gap:14px;
+    }
+    @media (max-width: 1080px){
+      .grid{grid-template-columns:1fr}
+      .sidebar{order:2}
+      .main{order:1}
+    }
+
+    .panel{
+      background: rgba(255,255,255,.86);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      overflow:hidden;
+      position:relative;
+    }
+    .panelHeader{
+      padding:14px 14px 12px;
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+      border-bottom:1px solid var(--border);
+      background: rgba(246,247,249,.85);
+    }
+    .panelHeader h2{margin:0;font-size:12px;letter-spacing:.28px;color:var(--muted);font-weight:800;text-transform:uppercase}
+
+    .tabs{display:flex; gap:6px; flex-wrap:wrap}
+    .tab{
+      font-size:12px; padding:7px 10px;border-radius:999px;
+      border:1px solid var(--border);
+      background: rgba(255,255,255,.95);
+      color:var(--muted);
+      cursor:pointer;
+      transition: transform .15s ease, border-color .15s ease, background .15s ease;
+    }
+    .tab:hover{transform:translateY(-1px);border-color:rgba(21,196,179,.45)}
+    .tab.active{
+      background: rgba(21,196,179,.16);
+      border-color: rgba(21,196,179,.45);
+      color: var(--ink);
+      font-weight:700;
+    }
+
+    .content{padding:12px;display:grid;gap:10px}
+
+    .list{display:flex;flex-direction:column;gap:8px}
+    .item{
+      width:100%;
+      text-align:left;
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+      padding:10px 10px;
+      border-radius: var(--radius2);
+      border:1px solid var(--border);
+      background: rgba(255,255,255,.96);
+      cursor:pointer;
+      transition: transform .12s ease, border-color .12s ease, background .12s ease, opacity .12s ease;
+      outline:none;
+      position:relative;
+      box-shadow: 0 10px 18px rgba(11,15,26,.05);
+    }
+    .item:hover{transform: translateY(-1px); border-color: rgba(21,196,179,.45)}
+    .item:focus-visible{box-shadow: 0 0 0 3px rgba(21,196,179,.22)}
+    .item .left{display:flex; align-items:center; gap:10px; min-width:0}
+    .badge{
+      font-family:var(--mono);
+      font-size:11px;
+      padding:4px 7px;
+      border-radius:999px;
+      background: rgba(11,15,26,.05);
+      border:1px solid var(--border);
+      color:var(--muted);
+      flex:0 0 auto;
+    }
+    .label{font-size:13px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .mini{font-size:11px;color:var(--muted);padding:3px 7px;border-radius:999px;border:1px solid var(--border);background:rgba(11,15,26,.04);flex:0 0 auto}
+    .item.selected{border-color: rgba(21,196,179,.60); background: rgba(21,196,179,.10)}
+    .item.dim{opacity:.60}
+
+    .heat1{box-shadow: inset 0 0 0 1px rgba(21,196,179,.10)}
+    .heat2{box-shadow: inset 0 0 0 1px rgba(21,196,179,.16)}
+    .heat3{box-shadow: inset 0 0 0 1px rgba(21,196,179,.24)}
+    .heat4{box-shadow: inset 0 0 0 1px rgba(21,196,179,.34)}
+    .heat5{box-shadow: inset 0 0 0 1px rgba(21,196,179,.46)}
+    .heat6{box-shadow: inset 0 0 0 1px rgba(21,196,179,.62)}
+
+    .infoPanel{padding:12px;border-top:1px solid var(--border);background:rgba(246,247,249,.85)}
+    .infoTitle{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap}
+    .infoTitle h3{margin:0;font-size:14px}
+    .kvs{display:flex;gap:8px;flex-wrap:wrap}
+    .kv{font-size:11px;color:var(--muted);background:rgba(11,15,26,.04);border:1px solid var(--border);padding:6px 9px;border-radius:999px}
+    .infoBody{margin-top:8px;display:grid;gap:10px}
+    .infoBody p{margin:0;color:var(--muted);line-height:1.55;font-size:12.5px}
+
+    .box{border:1px solid var(--border);background:rgba(255,255,255,.92);border-radius:var(--radius2);padding:10px;box-shadow: 0 10px 18px rgba(11,15,26,.05)}
+    .box h4{margin:0 0 7px 0;font-size:11px;letter-spacing:.2px;text-transform:uppercase;color:var(--muted);font-weight:800}
+    ul{margin:0;padding-left:18px;color:var(--muted);font-size:12.5px;line-height:1.55}
+
+    /* Search */
+    .searchRow { margin-bottom: 12px; position: relative; }
+    .searchInput {
+      width: 100%;
+      background: rgba(11,15,26,.06);
+      border: 1px solid var(--border);
+      color: var(--ink);
+      padding: 9px 12px 9px 32px;
+      border-radius: var(--radius2);
+      font-family: var(--sans);
+      font-size: 13px;
+      outline: none;
+      transition: border-color .15s, background .15s;
+    }
+    .searchInput:focus { border-color: rgba(21,196,179,.55); background: rgba(11,15,26,.02); }
+    .searchInput::placeholder { color: var(--muted); opacity: 0.7; }
+    .searchIcon {
+      position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+      width: 15px; height: 15px; color: var(--muted); pointer-events: none;
+    }
+
+    /* Architecture */
+    .archWrap{position:relative; padding:14px; min-height:660px}
+    .archGrid{
+      position:relative;
+      width:100%;
+      height:640px;
+      border-radius: var(--radius);
+      border:1px solid var(--border);
+      background:
+        radial-gradient(680px 340px at 20% 0%, rgba(21,196,179,.14), transparent 62%),
+        radial-gradient(680px 340px at 90% 10%, rgba(14,165,233,.10), transparent 60%),
+        radial-gradient(680px 340px at 60% 110%, rgba(21,196,179,.10), transparent 62%),
+        rgba(255,255,255,.90);
+      overflow:auto;
+      box-shadow: 0 12px 30px rgba(11,15,26,.07);
+    }
+    .archCanvas{
+      position:relative;
+      min-width:1200px;
+      width:1200px;
+      min-height:800px;
+      height:800px;
+      transform-origin: 0 0;
+      transition: transform .15s ease;
+      display:block;
+    }
+    .zoomControls{
+      display:flex;
+      align-items:center;
+      gap:6px;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 999px;
+      padding: 4px 8px;
+    }
+    .zoomControls .archBtn{padding: 6px 10px;}
+    .zoomLevel{font-size: 11px; min-width: 42px; text-align: center; color: rgba(255,255,255,.80);}
+    .layerLabel{
+      position:absolute;
+      font-size:11px;
+      color:rgba(11,15,26,.70);
+      border:1px solid var(--border);
+      background: rgba(255,255,255,.82);
+      padding:5px 9px;
+      border-radius:999px;
+      backdrop-filter: blur(8px);
+      user-select:none;
+      font-weight:700;
+      letter-spacing:.15px;
+    }
+
+    .archNode{
+      position:absolute;
+      min-width:170px;
+      max-width:230px;
+      padding:10px 10px 8px;
+      border-radius: 16px;
+      border:1px solid var(--border);
+      background: rgba(255,255,255,.94);
+      box-shadow: 0 14px 28px rgba(11,15,26,.08);
+      transition: transform .12s ease, border-color .12s ease, background .12s ease, opacity .12s ease;
+      cursor:pointer;
+      user-select:none;
+    }
+    .archNode:hover{transform: translateY(-1px); border-color: rgba(21,196,179,.45)}
+    .archNode .hdr{display:flex;align-items:center;justify-content:space-between;gap:8px}
+    .archNode .name{font-size:13px;font-weight:800}
+    .archNode .zone{
+      font-size:11px;color:var(--muted);padding:3px 7px;border-radius:999px;border:1px solid var(--border);background: rgba(11,15,26,.04);
+      font-weight:650;
+    }
+    .archNode .desc{margin-top:6px;font-size:12px;line-height:1.4;color:rgba(11,15,26,.70)}
+    .archNode.dim{opacity:.58}
+    .archNode.hot{border-color: rgba(14,165,233,.45); background: rgba(14,165,233,.08)}
+    .archNode.selected{border-color: rgba(21,196,179,.70); background: rgba(21,196,179,.10)}
+    .archNode.related{border-color: rgba(21,196,179,.45); background: rgba(21,196,179,.08)}
+    .archNode .chips{margin-top:8px;display:flex;gap:6px;flex-wrap:wrap}
+    .chip{
+      font-size:10.5px;
+      padding:3px 7px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      background: rgba(11,15,26,.04);
+      color: rgba(11,15,26,.74);
+      font-weight:650;
+      cursor: pointer;
+      transition: background .15s ease, border-color .15s ease, color .15s ease;
+    }
+    .chip:hover{
+      background: rgba(21,196,179,.15);
+      border-color: rgba(21,196,179,.45);
+      color: var(--ink);
+    }
+    .archSvg{position:absolute; inset:0; pointer-events:none; z-index:1}
+    .archNode{z-index:2}
+
+    .legend{margin-top:10px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;color:var(--muted);font-size:12px}
+    .dot{width:10px;height:10px;border-radius:50%}
+    .dot.sel{background:rgba(21,196,179,.95)}
+    .dot.rel{background:rgba(21,196,179,.70)}
+    .dot.hot{background:rgba(14,165,233,.85)}
+
+    .note{color:var(--muted); font-size:12px; line-height:1.55}
+    .kbd{font-family:var(--mono); font-size:11px; padding:2px 6px; border-radius:8px; border:1px solid var(--border); background: rgba(11,15,26,.04); color: var(--ink)}
+  
+    /* ===== Enhancements: image-ish nodes + drag ===== */
+    .archGrid{
+      background-image:
+        radial-gradient(circle at 1px 1px, rgba(11,15,26,.06) 1px, transparent 0);
+      background-size: 18px 18px;
+      background-blend-mode: normal;
+    }
+    .archNode{
+      padding:10px 12px 10px;
+      cursor: grab;
+    }
+    .archNode.dragging{cursor:grabbing; transform: translateY(0px) scale(1.01); box-shadow: 0 18px 40px rgba(11,15,26,.12)}
+    .archNode .hdr{align-items:flex-start}
+    .archNode .leftStack{display:flex; gap:10px; align-items:flex-start}
+    .archNode .iconWrap{
+      width:36px;height:36px;border-radius:12px; flex:0 0 auto;
+      background: rgba(11,15,26,.06);
+      border: 1px solid var(--border);
+      display:flex;align-items:center;justify-content:center;
+    }
+    .archNode .iconWrap svg{width:20px;height:20px;opacity:.9}
+    .archNode .meta{display:flex;flex-direction:column;gap:2px;min-width:0}
+    .archNode .name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px}
+    .archNode .desc{margin-top:6px}
+    .archNode .chips{margin-top:8px}
+
+    .archToolbar{
+      position:absolute; right:12px; top:12px;
+      display:flex; gap:8px; flex-wrap:wrap; z-index:5;
+    }
+    .archBtn{
+      font-size:12px; padding:8px 10px; border-radius:999px;
+      border:1px solid var(--border2);
+      background: rgba(255,255,255,.88);
+      color:var(--ink);
+      cursor:pointer;
+      box-shadow: 0 10px 24px rgba(11,15,26,.06);
+      transition: transform .15s ease, border-color .15s ease;
+    }
+    .archBtn:hover{transform:translateY(-1px);border-color: rgba(21,196,179,.45)}
+    .archBtn.primary{
+      background: linear-gradient(180deg, rgba(21,196,179,.95), rgba(21,196,179,.85));
+      border-color: rgba(21,196,179,.55);
+      color: var(--accentInk);
+      font-weight:800;
+    }
+    .archHint{
+      position:absolute; left:12px; bottom:12px;
+      font-size:12px; color: var(--muted);
+      background: rgba(255,255,255,.82);
+      border:1px solid var(--border);
+      padding:8px 10px;
+      border-radius: 999px;
+      backdrop-filter: blur(8px);
+      z-index:5;
+    }
+
+    /* Softer edge lines */
+    .archSvg path{opacity:.9}
+
+  
+    .mark{width:34px;height:34px;border-radius:10px;background:rgba(255,255,255,.04);position:relative;
+      box-shadow:0 12px 28px rgba(0,0,0,.35);border:1px solid rgba(242,245,255,.10);}
+    .mark::before{content:"";position:absolute;inset:6px 7px;border-radius:10px;border:2px solid rgba(29,214,197,.70);
+      box-shadow: inset 0 0 0 2px rgba(29,214,197,.12);}
+    .mark::after{content:"T+";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+      font-weight:900;letter-spacing:.4px;font-size:12px;color:rgba(242,245,255,.90);
+      text-shadow:0 0 18px rgba(29,214,197,.30);}
+
+  
+  /* ===== True Positives homepage typography + color tuning (approx) ===== */
+  :root{
+    --bg: #07090f;
+    --ink: rgba(255,255,255,.92);
+    --muted: rgba(255,255,255,.68);
+    --muted2: rgba(255,255,255,.56);
+    --accent: #00d7c8; /* matches T+ teal vibe from logo */
+    --accent2: #7c3aed;
+    --border: rgba(255,255,255,.10);
+    --border2: rgba(255,255,255,.14);
+    --surface: rgba(255,255,255,.05);
+    --surface2: rgba(255,255,255,.065);
+    --surface3: rgba(255,255,255,.085);
+  }
+
+  /* Layout density + type */
+  .wrap{max-width: 1160px;}
+  h1,h2,h3,.brandTitle{font-family: var(--display); letter-spacing: -0.02em;}
+  h1{font-weight:900; line-height:1.06; font-size: 36px;}
+  @media (min-width: 920px){ h1{font-size: 44px;} }
+  .subtitle{font-size: 14px; line-height:1.55; color: var(--muted);}
+  @media (min-width: 920px){ .subtitle{font-size: 15px;} }
+
+  /* Nav + hero */
+  .top{
+    background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.035));
+    border-color: rgba(255,255,255,.10);
+  }
+  .nav a{color: rgba(255,255,255,.80);}
+  .nav a:hover{color: rgba(255,255,255,.96);}
+
+  /* Primary CTA closer to site vibe: bright teal outline + subtle fill */
+  .cta.primary{
+    background: linear-gradient(180deg, rgba(0,215,200,.22), rgba(0,215,200,.10));
+    border-color: rgba(0,215,200,.65);
+    box-shadow: 0 18px 48px rgba(0,0,0,.35), 0 0 0 1px rgba(0,215,200,.14) inset;
+  }
+  .cta.primary:hover{transform: translateY(-1px); box-shadow: 0 22px 58px rgba(0,0,0,.42), 0 0 0 1px rgba(0,215,200,.22) inset;}
+  .cta{background: rgba(255,255,255,.04);}
+
+  /* Pills/chips */
+  .pill{background: rgba(255,255,255,.045); border-color: rgba(255,255,255,.12); color: rgba(255,255,255,.80);}
+  .pill.on{background: rgba(0,215,200,.12); border-color: rgba(0,215,200,.45); color: rgba(255,255,255,.92);}
+
+  /* Panels */
+  .panel{
+    background: linear-gradient(180deg, rgba(255,255,255,.055), rgba(255,255,255,.03));
+    border-color: rgba(255,255,255,.10);
+  }
+
+  /* Architecture grid background */
+  .archGrid{
+    background: linear-gradient(180deg, rgba(255,255,255,.055), rgba(255,255,255,.03));
+    border-color: rgba(255,255,255,.10);
+  }
+
+  /* Architecture nodes: slightly flatter + crisp border like TP cards */
+  .archNode{
+    border-color: rgba(255,255,255,.12);
+    background: linear-gradient(180deg, rgba(255,255,255,.065), rgba(255,255,255,.03));
+  }
+  .archNode .desc{color: rgba(255,255,255,.70);}
+  .archNode:hover{border-color: rgba(0,215,200,.45);}
+  .archNode.active{border-color: rgba(0,215,200,.65); box-shadow: 0 26px 70px rgba(0,0,0,.50);}
+
+  .iconWrap{background: rgba(255,255,255,.045); border-color: rgba(255,255,255,.12);}
+  .iconWrap svg{color: rgba(255,255,255,.80);}
+
+  /* Toolbar buttons */
+  .archBtn{
+    background: rgba(255,255,255,.04);
+    color: rgba(255,255,255,.88);
+    border-color: rgba(255,255,255,.14);
+  }
+  .archBtn.primary{
+    background: linear-gradient(180deg, rgba(0,215,200,.22), rgba(0,215,200,.12));
+    border-color: rgba(0,215,200,.60);
+    color: rgba(255,255,255,.92);
+  }
+  .archHint{background: rgba(255,255,255,.04); border-color: rgba(255,255,255,.12); color: rgba(255,255,255,.70);}
+
+  /* Mark (logo) teal edge */
+  .mark::before{border-color: rgba(0,215,200,.78);}
+  .mark::after{text-shadow: 0 0 18px rgba(0,215,200,.34);}
+
+
+/* ===== Contrast safety overrides ===== */
+body, .panel, .top, .archGrid { color: rgba(255,255,255,.92); }
+
+button, select, option, label {
+  color: rgba(255,255,255,.90);
+}
+
+.btn, .cta, .archBtn {
+  color: rgba(255,255,255,.90);
+  background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.035));
+  border-color: rgba(255,255,255,.12);
+}
+.btn:hover, .cta:hover, .archBtn:hover {
+  color: rgba(255,255,255,.98);
+  border-color: rgba(0,215,200,.45);
+}
+
+.tab {
+  color: rgba(255,255,255,.70);
+  background: rgba(255,255,255,.04);
+}
+.tab:hover {
+  color: rgba(255,255,255,.92);
+}
+.tab.active {
+  color: rgba(255,255,255,.95);
+}
+
+.item {
+  color: rgba(255,255,255,.88);
+  background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.035));
+  border-color: rgba(255,255,255,.12);
+  box-shadow: 0 10px 18px rgba(0,0,0,.25);
+}
+.item:hover {
+  border-color: rgba(0,215,200,.45);
+  background: linear-gradient(180deg, rgba(255,255,255,.09), rgba(255,255,255,.05));
+}
+.item .label {
+  color: rgba(255,255,255,.90);
+}
+.item.selected {
+  background: linear-gradient(180deg, rgba(0,215,200,.18), rgba(0,215,200,.10));
+  border-color: rgba(0,215,200,.60);
+}
+.item.dim {
+  opacity: .55;
+}
+
+.badge, .mini, .chip, .pill {
+  color: rgba(255,255,255,.78);
+  background: rgba(255,255,255,.06);
+}
+
+.panelHeader {
+  background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+  border-color: rgba(255,255,255,.10);
+}
+.panelHeader h2 {
+  color: rgba(255,255,255,.75);
+}
+
+.infoPanel {
+  background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.025));
+  border-color: rgba(255,255,255,.10);
+}
+.infoTitle h3 {
+  color: rgba(255,255,255,.90);
+}
+.kv {
+  background: rgba(255,255,255,.06);
+  border-color: rgba(255,255,255,.10);
+  color: rgba(255,255,255,.75);
+}
+.infoBody p, .note {
+  color: rgba(255,255,255,.70);
+}
+.box {
+  background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+  border-color: rgba(255,255,255,.10);
+}
+.box h4 {
+  color: rgba(255,255,255,.70);
+}
+.box ul, .box li {
+  color: rgba(255,255,255,.75);
+}
+
+.control {
+  background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.035));
+  border-color: rgba(255,255,255,.12);
+  box-shadow: 0 10px 24px rgba(0,0,0,.25);
+}
+
+label {
+  color: rgba(255,255,255,.70);
+}
+
+select {
+  background: rgba(255,255,255,.06);
+  color: rgba(255,255,255,.90);
+}
+select option {
+  background: #0b0f17;
+  color: rgba(255,255,255,.92);
+}
+
+.switch {
+  background: rgba(255,255,255,.18);
+}
+.switch::after {
+  background: #ffffff;
+}
+
+.archHint, .legend {
+  color: rgba(255,255,255,.72);
+}
+
+svg {
+  stroke: rgba(255,255,255,.85);
+}
+
+/* Help modal */
+.helpBtn{
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.6;
+  transition: opacity .15s;
+}
+.helpBtn:hover{opacity: 1;}
+.helpBtn svg{width: 18px; height: 18px; stroke: currentColor; fill: none;}
+
+.modalOverlay{
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity .2s, visibility .2s;
+}
+.modalOverlay.open{opacity: 1; visibility: visible;}
+
+.modal{
+  background: linear-gradient(180deg, rgba(30,35,50,.98), rgba(20,25,38,.98));
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+  max-width: 420px;
+  width: 90%;
+  box-shadow: 0 24px 60px rgba(0,0,0,.5);
+}
+.modal h3{margin: 0 0 16px; font-size: 14px; font-weight: 700; color: rgba(255,255,255,.92);}
+.modal .kv{
+  padding: 8px 0;
+  font-size: 13px;
+  color: rgba(255,255,255,.80);
+  border-bottom: 1px solid rgba(255,255,255,.08);
+}
+.modal .kv:last-child{border-bottom: none;}
+.modal .note{
+  margin-top: 16px;
+  font-size: 12px;
+  color: rgba(255,255,255,.60);
+  line-height: 1.5;
+}
+.modalClose{
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: rgba(255,255,255,.6);
+  padding: 4px;
+}
+.modalClose:hover{color: rgba(255,255,255,.9);}
+
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div class="brandRow">
+      <div class="brand">
+        <div class="mark" aria-hidden="true"></div>
+        <div class="brandText">
+          <div class="brandName">True Positives-inspired</div>
+          <div class="brandSub">Clean, enterprise AppSec look (for demos)</div>
+        </div>
+      </div>
+    </div>
+    <h1>DRY Lens + Architecture Context</h1>
+    <div class="tagline">A contextual architecture view: mobile/web clients → edge (Cloudflare/WAF) → API gateway → K8s runtime → data stores + agent/tooling. Select an OWASP item to see where it “lands.”</div>
+
+    <div class="controls">
+      <div class="leftControls">
+        <div class="control">
+          <label for="contextSelect">Context emphasis</label>
+          <select id="contextSelect"></select>
+        </div>
+        <div class="toggle">
+          <span class="switch" id="heatSwitch" role="switch" aria-checked="false" tabindex="0"></span>
+          <span>Show duplication heatmap</span>
+        </div>
+        <button class="btn" id="clearBtn" type="button">Clear selection</button>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="grid">
+    <section class="panel sidebar">
+      <div class="panelHeader">
+        <h2>OWASP Lists</h2>
+        <button class="helpBtn" id="helpBtn" type="button" aria-label="Help">
+          <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+          </svg>
+        </button>
+        <div style="flex:1; display:flex; justify-content:flex-end">
+          <select id="listSelect" style="max-width:180px; padding:4px 8px; border-radius:6px; border:1px solid var(--border)"></select>
+        </div>
+      </div>
+      <div class="content">
+        <div class="searchRow">
+          <svg class="searchIcon" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          <input type="text" id="searchInput" class="searchInput" placeholder="Search vulnerabilities..." aria-label="Search" autocomplete="off">
+        </div>
+        <div class="list" id="owaspList"></div>
+      </div>
+    </section>
+
+    <section class="panel main">
+      <div class="panelHeader">
+        <h2>Architecture Context</h2>
+        <div class="tabs"><span class="pill">Click nodes to focus a subsystem</span></div>
+      </div>
+
+      <div class="content">
+        <div class="archWrap">
+          <div class="archGrid" id="archGrid">
+            <div class="archToolbar" aria-label="Architecture tools">
+              <div class="zoomControls">
+                <button class="archBtn" id="zoomOutBtn" type="button">−</button>
+                <span class="zoomLevel" id="zoomLevel">100%</span>
+                <button class="archBtn" id="zoomInBtn" type="button">+</button>
+                <button class="archBtn" id="zoomFitBtn" type="button">Fit</button>
+              </div>
+              <button class="archBtn primary" id="saveLayoutBtn" type="button">Save layout</button>
+              <button class="archBtn" id="resetLayoutBtn" type="button">Reset layout</button>
+              <button class="archBtn" id="exportLayoutBtn" type="button">Export JSON</button>
+              <button class="archBtn" id="importLayoutBtn" type="button">Import JSON</button>
+            </div>
+            <div class="archHint">Drag nodes to rearrange • Hold <span class="kbd">Shift</span> to snap • Scroll to pan • Ctrl+scroll to zoom</div>
+
+            <div class="archCanvas" id="archCanvas">
+              <svg class="archSvg" id="archSvg"></svg>
+              <div class="layerLabel" style="left:12px;top:12px;">Client</div>
+              <div class="layerLabel" style="left:12px;top:186px;">Edge / Perimeter</div>
+              <div class="layerLabel" style="left:12px;top:336px;">Kubernetes / Runtime</div>
+              <div class="layerLabel" style="left:12px;top:520px;">Data / External</div>
+            </div>
+          </div>
+
+          <div class="legend">
+            <div class="dot sel"></div><span>Selected</span>
+            <div class="dot rel"></div><span>Related</span>
+            <div class="dot hot"></div><span>Heatmap hot</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="infoPanel" id="detailPanel">
+        <div class="infoTitle">
+          <h3 id="detailTitle">Select an OWASP item or a node</h3>
+          <div class="kvs">
+          </div>
+        </div>
+        <div class="infoBody" id="detailBody">
+          <p>Pick an OWASP item on the left to see (1) canonical classes and (2) where they touch the architecture. Or click an architecture node to see which canonical classes tend to land there.</p>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script>
+const DATA = {
+  contexts: [
+    { id: "web", label: "Web" },
+    { id: "api", label: "API" },
+    { id: "llm", label: "LLM" },
+    { id: "agentic", label: "Agentic" },
+    { id: "hitl", label: "Human-in-the-loop" }
+  ],
+  classes: [
+    { id:"C01", name:"Control & Instruction Injection" },
+    { id:"C02", name:"Identity & Authorization Failure" },
+    { id:"C03", name:"Trust Boundary & Confused Deputy" },
+    { id:"C04", name:"Unsafe Execution & RCE" },
+    { id:"C05", name:"Untrusted State Persistence" },
+    { id:"C06", name:"Supply Chain Compromise" },
+    { id:"C07", name:"Communication Integrity Failure" },
+    { id:"C08", name:"Failure Propagation & Blast Radius" },
+    { id:"C09", name:"Human Trust & Authority Exploitation" },
+    { id:"C10", name:"Observability & Attribution Gaps" }
+  ],
+  classDetails: {
+    C01:{ definition:"Untrusted input becomes instruction/intent.", exploit:"Interpretation boundary crossed → actions change.", controls:["Separate data/instructions","Allowlist actions","Policy gates","Context isolation","Adversarial testing"], ex:{web:"SQLi/XSS/SSRF",api:"Query/template injection",llm:"Prompt injection",agentic:"Goal/tool steering",hitl:"Persuasive approval framing"} },
+    C02:{ definition:"Identity/scope binding fails.", exploit:"Over-broad scopes → unauthorized action.", controls:["Least privilege","Per-action authZ","Short-lived creds","Tenant isolation","Audit"], ex:{web:"Broken access control",api:"BOLA/BFLA",llm:"Over-scoped tools",agentic:"Delegation chains",hitl:"Approval outside authority"} },
+    C03:{ definition:"Trusted component misuses authority.", exploit:"Low-priv routed through high-priv.", controls:["Bind intent","Re-validate provenance","No transitive trust","Separate duties","Detect spikes"], ex:{web:"CSRF/SSRF deputy",api:"Header/claim trust",llm:"Tool deputy",agentic:"Inter-agent delegation",hitl:"Human deputy"} },
+    C04:{ definition:"Untrusted content leads to execution.", exploit:"Text → eval/command/template → RCE.", controls:["No eval","Sandbox","Gate execution","Analyze artifacts","Allowlist tools"], ex:{web:"Template injection",api:"Deserialization/build triggers",llm:"Exec generated code",agentic:"Tool chains to shell",hitl:"Operator runs script"} },
+    C05:{ definition:"Poisoned state persists and is reused.", exploit:"Write → later read as trusted.", controls:["Provenance scoring","Namespace memory","Validate write+read","Retention/rollback","Avoid self-reinforcement"], ex:{web:"Cache/stored XSS",api:"Poisoned metadata",llm:"RAG/vector poisoning",agentic:"Long-term drift",hitl:"Biasing notes"} },
+    C06:{ definition:"Upstream artifacts are compromised.", exploit:"Tampered dependency/tool/model used.", controls:["SBOM/AIBOM","Pin+attest","Allowlist registries","Runtime integrity","Kill-switch"], ex:{web:"NPM compromise",api:"Gateway/SDK supply chain",llm:"Model/prompt packages",agentic:"Tool discovery expands chain",hitl:"Vendor trust abuse"} },
+    C07:{ definition:"Messages spoofed/replayed/downgraded.", exploit:"Weak integrity → false meaning.", controls:["mTLS/signing","Anti-replay","Downgrade resistance","Semantic validation","Secure discovery"], ex:{web:"Session/header spoofing",api:"JWT confusion/replay",llm:"Tampered tool results",agentic:"Spoofed agent comms",hitl:"Forged approval requests"} },
+    C08:{ definition:"Automation amplifies faults.", exploit:"Fan-out/retries → cascade.", controls:["Circuit breakers","Budgets/quotas","Isolation/rollout","Independent checks","Replay testing"], ex:{web:"Batch amplification",api:"Retry storms",llm:"Hallucination config",agentic:"Planner→executor fan-out",hitl:"Approval fatigue"} },
+    C09:{ definition:"Humans manipulated into unsafe actions.", exploit:"Authority bias → consent laundering.", controls:["UI friction","Provenance/risk summaries","Training/playbooks","Separate preview/effect","Approval anomaly alerts"], ex:{web:"Phishing",api:"Ops console pressure",llm:"Confident hallucinations",agentic:"Approval nudges",hitl:"Urgency escalation"} },
+    C10:{ definition:"Poor logging/lineage obscures cause.", exploit:"No attribution → attacks blend in.", controls:["Tamper-evident logs","End-to-end lineage","Telemetry/anomaly","Non-repudiation","Replayable traces"], ex:{web:"Weak monitoring",api:"No trace propagation",llm:"No source attribution",agentic:"No goal-state logs",hitl:"Approvals w/o provenance"} },
+  },
+  lists: [
+    { id:"owasp_app", label:"OWASP Top 10 (Web Apps)", items:[
+      {id:"A01", label:"Broken Access Control"},
+      {id:"A02", label:"Cryptographic Failures"},
+      {id:"A03", label:"Injection"},
+      {id:"A04", label:"Insecure Design"},
+      {id:"A05", label:"Security Misconfiguration"},
+      {id:"A06", label:"Vulnerable & Outdated Components"},
+      {id:"A07", label:"Auth Failures"},
+      {id:"A08", label:"Integrity Failures"},
+      {id:"A09", label:"Logging & Monitoring Failures"},
+      {id:"A10", label:"SSRF"},
+    ]},
+    { id:"owasp_api", label:"OWASP API Top 10", items:[
+      {id:"API01", label:"Broken Object Level Auth (BOLA)"},
+      {id:"API02", label:"Broken Auth"},
+      {id:"API03", label:"Broken Object Property Auth"},
+      {id:"API04", label:"Unrestricted Resource Consumption"},
+      {id:"API05", label:"Broken Function Level Auth"},
+      {id:"API06", label:"Sensitive Data Exposure"},
+      {id:"API07", label:"SSRF"},
+      {id:"API08", label:"Security Misconfiguration"},
+      {id:"API09", label:"Improper Inventory Mgmt"},
+      {id:"API10", label:"Unsafe Consumption of APIs"},
+    ]},
+    { id:"owasp_llm", label:"OWASP Top 10 for LLM Apps", items:[
+      {id:"LLM01", label:"Prompt Injection"},
+      {id:"LLM02", label:"Sensitive Info Disclosure"},
+      {id:"LLM03", label:"Supply Chain"},
+      {id:"LLM04", label:"Data/Model Poisoning"},
+      {id:"LLM05", label:"Improper Output Handling"},
+      {id:"LLM06", label:"Excessive Agency"},
+      {id:"LLM07", label:"System Prompt Leakage"},
+      {id:"LLM08", label:"Vector/Embedding Weaknesses"},
+      {id:"LLM09", label:"Misinformation"},
+      {id:"LLM10", label:"Unbounded Consumption"},
+    ]},
+    { id:"owasp_agentic", label:"OWASP Top 10 for Agentic Apps", items:[
+      {id:"ASI01", label:"Agent Goal Hijack"},
+      {id:"ASI02", label:"Tool Misuse & Exploitation"},
+      {id:"ASI03", label:"Identity & Privilege Abuse"},
+      {id:"ASI04", label:"Agentic Supply Chain"},
+      {id:"ASI05", label:"Unexpected Code Execution (RCE)"},
+      {id:"ASI06", label:"Memory & Context Poisoning"},
+      {id:"ASI07", label:"Insecure Inter-Agent Comms"},
+      {id:"ASI08", label:"Cascading Failures"},
+      {id:"ASI09", label:"Human-Agent Trust Exploit"},
+      {id:"ASI10", label:"Rogue Agents"},
+    ]},
+    { id:"owasp_mobile", label:"OWASP Mobile Top 10", items:[
+      {id:"M01", label:"Improper Credential Usage"},
+      {id:"M02", label:"Inadequate Supply Chain Security"},
+      {id:"M03", label:"Insecure Authentication/Authorization"},
+      {id:"M04", label:"Insufficient Input/Output Validation"},
+      {id:"M05", label:"Insecure Communication"},
+      {id:"M06", label:"Inadequate Privacy Controls"},
+      {id:"M07", label:"Insufficient Binary Protections"},
+      {id:"M08", label:"Security Misconfiguration"},
+      {id:"M09", label:"Insecure Data Storage"},
+      {id:"M10", label:"Insufficient Cryptography"},
+    ]},
+    { id:"owasp_k8s", label:"OWASP Kubernetes Top 10", items:[
+      {id:"K01", label:"Insecure Workload Configurations"},
+      {id:"K02", label:"Supply Chain Vulnerabilities"},
+      {id:"K03", label:"Overly Permissive RBAC"},
+      {id:"K04", label:"Lack of Centralized Policy Enforcement"},
+      {id:"K05", label:"Inadequate Logging and Monitoring"},
+      {id:"K06", label:"Broken Authentication Mechanisms"},
+      {id:"K07", label:"Missing Network Segmentation"},
+      {id:"K08", label:"Secrets Management Failures"},
+      {id:"K09", label:"Misconfigured Cluster Components"},
+      {id:"K10", label:"Outdated and Vulnerable Components"},
+    ]}
+  ],
+  mappings: [
+    { from: "owasp_app:A01", to: ["C02", "C03"] },
+    { from: "owasp_app:A02", to: ["C02"] },
+    { from: "owasp_app:A03", to: ["C01", "C04"] },
+    { from: "owasp_app:A04", to: ["C08", "C10"] },
+    { from: "owasp_app:A05", to: ["C02", "C10", "C08"] },
+    { from: "owasp_app:A06", to: ["C06"] },
+    { from: "owasp_app:A07", to: ["C02"] },
+    { from: "owasp_app:A08", to: ["C06", "C07"] },
+    { from: "owasp_app:A09", to: ["C10"] },
+    { from: "owasp_app:A10", to: ["C01", "C03"] },
+
+    { from: "owasp_api:API01", to: ["C02"] },
+    { from: "owasp_api:API02", to: ["C02"] },
+    { from: "owasp_api:API03", to: ["C02"] },
+    { from: "owasp_api:API04", to: ["C08"] },
+    { from: "owasp_api:API05", to: ["C02"] },
+    { from: "owasp_api:API06", to: ["C02", "C10"] },
+    { from: "owasp_api:API07", to: ["C01", "C03"] },
+    { from: "owasp_api:API08", to: ["C10", "C08"] },
+    { from: "owasp_api:API09", to: ["C10"] },
+    { from: "owasp_api:API10", to: ["C03", "C06"] },
+
+    { from: "owasp_llm:LLM01", to: ["C01", "C03"] },
+    { from: "owasp_llm:LLM02", to: ["C02", "C10"] },
+    { from: "owasp_llm:LLM03", to: ["C06"] },
+    { from: "owasp_llm:LLM04", to: ["C05"] },
+    { from: "owasp_llm:LLM05", to: ["C04"] },
+    { from: "owasp_llm:LLM06", to: ["C02", "C08"] },
+    { from: "owasp_llm:LLM07", to: ["C02", "C10"] },
+    { from: "owasp_llm:LLM08", to: ["C05", "C10"] },
+    { from: "owasp_llm:LLM09", to: ["C09", "C10"] },
+    { from: "owasp_llm:LLM10", to: ["C08"] },
+
+    { from: "owasp_agentic:ASI01", to: ["C01", "C03"] },
+    { from: "owasp_agentic:ASI02", to: ["C01", "C02", "C08"] },
+    { from: "owasp_agentic:ASI03", to: ["C02", "C03"] },
+    { from: "owasp_agentic:ASI04", to: ["C06", "C07"] },
+    { from: "owasp_agentic:ASI05", to: ["C04", "C06"] },
+    { from: "owasp_agentic:ASI06", to: ["C05", "C10"] },
+    { from: "owasp_agentic:ASI07", to: ["C07", "C03"] },
+    { from: "owasp_agentic:ASI08", to: ["C08", "C10"] },
+    { from: "owasp_agentic:ASI09", to: ["C09"] },
+    { from: "owasp_agentic:ASI10", to: ["C02", "C08", "C10"] },
+
+    { from: "owasp_mobile:M01", to: ["C02", "C05"] },
+    { from: "owasp_mobile:M02", to: ["C06"] },
+    { from: "owasp_mobile:M03", to: ["C02", "C03"] },
+    { from: "owasp_mobile:M04", to: ["C01", "C04"] },
+    { from: "owasp_mobile:M05", to: ["C07"] },
+    { from: "owasp_mobile:M06", to: ["C10"] },
+    { from: "owasp_mobile:M07", to: ["C06", "C04"] },
+    { from: "owasp_mobile:M08", to: ["C08", "C10"] },
+    { from: "owasp_mobile:M09", to: ["C05"] },
+    { from: "owasp_mobile:M10", to: ["C02", "C07"] },
+
+    { from: "owasp_k8s:K01", to: ["C08", "C10"] },
+    { from: "owasp_k8s:K02", to: ["C06"] },
+    { from: "owasp_k8s:K03", to: ["C02", "C03"] },
+    { from: "owasp_k8s:K04", to: ["C01", "C08"] },
+    { from: "owasp_k8s:K05", to: ["C10"] },
+    { from: "owasp_k8s:K06", to: ["C02"] },
+    { from: "owasp_k8s:K07", to: ["C03", "C07"] },
+    { from: "owasp_k8s:K08", to: ["C02", "C05"] },
+    { from: "owasp_k8s:K09", to: ["C08", "C10"] },
+    { from: "owasp_k8s:K10", to: ["C06"] }
+  ],
+  arch: {
+    nodes: [
+      { id:"mobile", name:"Mobile App", zone:"Client", x:40, y:62, desc:"Native client, device storage, app transport.", classes:["C01","C02","C09","C10"] },
+      { id:"web", name:"Web Client", zone:"Client", x:260, y:62, desc:"Browser UI, cookies, DOM, JS runtime.", classes:["C01","C02","C03","C09","C10"] },
+      { id:"cloudflare", name:"Cloudflare / CDN", zone:"Edge", x:70, y:220, desc:"DDoS, caching, edge rules, bot mgmt.", classes:["C08","C10","C07"] },
+      { id:"waf", name:"WAF", zone:"Edge", x:300, y:220, desc:"Request filtering, signatures, anomaly scoring.", classes:["C01","C08","C10"] },
+      { id:"api_gw", name:"API Gateway", zone:"Edge", x:520, y:220, desc:"AuthN/Z, routing, rate limits, schema checks.", classes:["C02","C07","C08","C10","C03"] },
+
+      { id:"k8s", name:"Kubernetes Cluster", zone:"Runtime", x:80, y:370, desc:"Network policy, service mesh, workload identity.", classes:["C02","C07","C08","C10","C06"] },
+      { id:"svc", name:"App Service Pods", zone:"Runtime", x:320, y:370, desc:"Business logic, APIs, internal calls.", classes:["C01","C02","C03","C04","C10","C08"] },
+      { id:"jobs", name:"Workers / Jobs", zone:"Runtime", x:560, y:370, desc:"Async processing, retries, fan-out.", classes:["C08","C10","C04","C02"] },
+
+      { id:"agent", name:"Agent / Orchestrator", zone:"Runtime", x:800, y:330, desc:"Planner/executor, tool calls, policies.", classes:["C01","C02","C03","C08","C10","C09"] },
+      { id:"tools", name:"Tools / Integrations", zone:"Runtime", x:800, y:450, desc:"3rd-party APIs, plugins, registries.", classes:["C06","C07","C03","C01","C10"] },
+
+      { id:"db", name:"Database", zone:"Data", x:170, y:540, desc:"Primary datastore, PII, authZ data.", classes:["C02","C05","C10"] },
+      { id:"cache", name:"Cache", zone:"Data", x:390, y:540, desc:"Session/cache layer, derived state.", classes:["C05","C10","C08"] },
+      { id:"vector", name:"Vector DB / RAG", zone:"Data", x:610, y:540, desc:"Embeddings + retrieval context store.", classes:["C05","C10","C01"] },
+      { id:"siem", name:"Logs / SIEM", zone:"Data", x:830, y:540, desc:"Audit trails, detection, investigations.", classes:["C10"] }
+    ],
+    edges: [
+      ["mobile","cloudflare"], ["web","cloudflare"],
+      ["cloudflare","waf"], ["waf","api_gw"],
+      ["api_gw","k8s"], ["k8s","svc"], ["svc","db"], ["svc","cache"], ["svc","vector"],
+      ["svc","jobs"], ["jobs","db"],
+      ["svc","agent"], ["agent","tools"], ["agent","vector"],
+      ["svc","siem"], ["api_gw","siem"], ["agent","siem"], ["k8s","siem"]
+    ]
+  }
+};
+
+const $ = (s, el=document)=> el.querySelector(s);
+const $$ = (s, el=document)=> [...el.querySelectorAll(s)];
+const clamp = (n,a,b)=> Math.max(a, Math.min(b,n));
+const byListId = Object.fromEntries(DATA.lists.map(l=>[l.id,l]));
+const byClassId = Object.fromEntries(DATA.classes.map(c=>[c.id,c]));
+const mapFrom = new Map();
+const mapTo = new Map();
+for (const m of DATA.mappings){
+  mapFrom.set(m.from, m.to.slice());
+  for (const cid of m.to){
+    if (!mapTo.has(cid)) mapTo.set(cid, new Set());
+    mapTo.get(cid).add(m.from);
+  }
+}
+const classListCounts = {};
+for (const c of DATA.classes){
+  const keys = mapTo.get(c.id) ? [...mapTo.get(c.id)] : [];
+  classListCounts[c.id] = new Set(keys.map(k=>k.split(":")[0])).size;
+}
+
+let activeTab = DATA.lists[0].id;
+let heatmapOn = false;
+let contextId = DATA.contexts[0].id;
+let searchTerm = "";
+const selectedKeys = new Set();
+const selectedClasses = new Set();
+let lastClickType = null;
+let focusedNode = null;
+
+function el(tag, attrs={}, ...children){
+  const n = document.createElement(tag);
+  for (const [k,v] of Object.entries(attrs)){
+    if (k==="class") n.className=v;
+    else if (k==="dataset") for (const [dk,dv] of Object.entries(v)) n.dataset[dk]=dv;
+    else if (k==="style") n.style.cssText=v;
+    else if (k.startsWith("on") && typeof v==="function") n.addEventListener(k.slice(2), v);
+    else n.setAttribute(k, v);
+  }
+  children.forEach(c => {
+    if (c==null) return;
+    if (typeof c==="string") n.appendChild(document.createTextNode(c));
+    else n.appendChild(c);
+  });
+  return n;
+}
+
+
+/* ===== Layout persistence (localStorage) ===== */
+const LAYOUT_KEY = "dryLens.arch.layout.v1";
+function loadLayout(){
+  try{
+    const raw = localStorage.getItem(LAYOUT_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+function saveLayout(){
+  const grid = $("#archGrid");
+  const layout = {};
+  $$(".archNode", grid).forEach(n=>{
+    const id = n.dataset.nodeid;
+    layout[id] = {
+      x: parseFloat(n.style.left || "0"),
+      y: parseFloat(n.style.top || "0")
+    };
+  });
+  localStorage.setItem(LAYOUT_KEY, JSON.stringify(layout));
+  toast("Layout saved");
+}
+function resetLayout(){
+  localStorage.removeItem(LAYOUT_KEY);
+  renderArchitecture();
+  updateHighlights();
+  drawArchEdges();
+  toast("Layout reset");
+}
+function exportLayout(){
+  const layout = loadLayout() || {};
+  const blob = new Blob([JSON.stringify(layout, null, 2)], {type:"application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "architecture-layout.json";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+async function importLayout(){
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = "application/json";
+  input.onchange = async () => {
+    const file = input.files?.[0];
+    if (!file) return;
+    const text = await file.text();
+    try{
+      const obj = JSON.parse(text);
+      localStorage.setItem(LAYOUT_KEY, JSON.stringify(obj));
+      renderArchitecture();
+      updateHighlights();
+      drawArchEdges();
+      toast("Layout imported");
+    } catch {
+      toast("Invalid JSON", true);
+    }
+  };
+  input.click();
+}
+
+/* ===== Tiny toast ===== */
+let toastTimer = null;
+function toast(msg, danger=false){
+  let t = document.getElementById("toast");
+  if (!t){
+    t = document.createElement("div");
+    t.id = "toast";
+    t.style.position = "fixed";
+    t.style.right = "16px";
+    t.style.bottom = "16px";
+    t.style.padding = "10px 12px";
+    t.style.borderRadius = "999px";
+    t.style.border = "1px solid rgba(11,15,26,.12)";
+    t.style.background = "rgba(255,255,255,.92)";
+    t.style.boxShadow = "0 16px 42px rgba(11,15,26,.12)";
+    t.style.fontSize = "12px";
+    t.style.color = "#0b0f1a";
+    t.style.zIndex = "9999";
+    t.style.backdropFilter = "blur(10px)";
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.style.borderColor = danger ? "rgba(239,68,68,.35)" : "rgba(21,196,179,.35)";
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>{ t.remove(); }, 1800);
+}
+
+/* ===== Icon set (inline SVGs so it stays self-contained) ===== */
+function iconFor(id){
+  const icons = {
+    mobile: svgIcon("phone"),
+    web: svgIcon("globe"),
+    cloudflare: svgIcon("cloud"),
+    waf: svgIcon("shield"),
+    api_gw: svgIcon("route"),
+    k8s: svgIcon("kube"),
+    svc: svgIcon("cube"),
+    jobs: svgIcon("queue"),
+    agent: svgIcon("spark"),
+    tools: svgIcon("plug"),
+    db: svgIcon("database"),
+    cache: svgIcon("bolt"),
+    vector: svgIcon("dots"),
+    siem: svgIcon("radar"),
+  };
+  return icons[id] || svgIcon("square");
+}
+function svgIcon(name){
+  const ns = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(ns, "svg");
+  svg.setAttribute("viewBox","0 0 24 24");
+  svg.setAttribute("fill","none");
+  svg.setAttribute("stroke","currentColor");
+  svg.setAttribute("stroke-width","1.8");
+  svg.setAttribute("stroke-linecap","round");
+  svg.setAttribute("stroke-linejoin","round");
+
+  const p = (d)=>{ const el=document.createElementNS(ns,"path"); el.setAttribute("d", d); return el; };
+  const c = (cx,cy,r)=>{ const el=document.createElementNS(ns,"circle"); el.setAttribute("cx",cx); el.setAttribute("cy",cy); el.setAttribute("r",r); return el; };
+  const rct = (x,y,w,h,rx)=>{ const el=document.createElementNS(ns,"rect"); el.setAttribute("x",x); el.setAttribute("y",y); el.setAttribute("width",w); el.setAttribute("height",h); el.setAttribute("rx",rx||"2"); return el; };
+
+  const defs = {
+    phone: [rct(8,2,8,20,3), p("M10 18h4")],
+    globe: [c(12,12,9), p("M3 12h18"), p("M12 3c3.5 3 3.5 15 0 18"), p("M12 3c-3.5 3-3.5 15 0 18")],
+    cloud: [p("M7 18h10a4 4 0 0 0 .5-8A6 6 0 0 0 6.5 9.5 3.5 3.5 0 0 0 7 18")],
+    shield: [p("M12 2l7 4v6c0 5-3 9-7 10-4-1-7-5-7-10V6l7-4z"), p("M9 12l2 2 4-5")],
+    route: [c(6,18,2), c(18,6,2), p("M8 18c6 0 4-10 8-10")],
+    kube: [p("M12 2l7 4v8l-7 4-7-4V6l7-4z"), p("M12 2v16"), p("M5 6l7 4 7-4")],
+    cube: [p("M12 2l9 5-9 5-9-5 9-5z"), p("M3 7v10l9 5 9-5V7")],
+    queue: [p("M4 6h16"), p("M4 12h10"), p("M4 18h16"), c(18,12,1.5)],
+    spark: [p("M12 2l1.5 6L20 12l-6.5 3.5L12 22l-1.5-6.5L4 12l6.5-4L12 2z")],
+    plug: [p("M9 6v6"), p("M15 6v6"), p("M7 10h10"), p("M12 16v6"), p("M9 4v2"), p("M15 4v2")],
+    database: [p("M4 7c0 2.2 3.6 4 8 4s8-1.8 8-4-3.6-4-8-4-8 1.8-8 4z"), p("M4 7v10c0 2.2 3.6 4 8 4s8-1.8 8-4V7"), p("M4 12c0 2.2 3.6 4 8 4s8-1.8 8-4")],
+    bolt: [p("M13 2L3 14h7l-1 8 10-12h-7l1-8z")],
+    dots: [c(6.5,12,1.6), c(12,12,1.6), c(17.5,12,1.6)],
+    radar: [c(12,12,9), c(12,12,5), p("M12 12l6-6"), c(18,6,1.3)],
+    square: [rct(5,5,14,14,3)]
+  };
+  (defs[name] || defs.square).forEach(x => svg.appendChild(x));
+  svg.style.color = "rgba(11,15,26,.75)";
+  return svg;
+}
+
+/* ===== Drag and drop ===== */
+function makeDraggable(nodeEl, containerEl){
+  let dragging = false;
+  let startX=0, startY=0, origX=0, origY=0;
+
+  const onPointerDown = (e) => {
+    if (e.target.closest('.chip') || e.target.closest('.archBtn')) return;
+    if (e.button !== undefined && e.button !== 0) return;
+    dragging = true;
+    nodeEl.classList.add("dragging");
+    nodeEl.setPointerCapture?.(e.pointerId);
+    startX = e.clientX; startY = e.clientY;
+    origX = parseFloat(nodeEl.style.left || "0");
+    origY = parseFloat(nodeEl.style.top || "0");
+    e.preventDefault();
+  };
+
+  const onPointerMove = (e) => {
+    if (!dragging) return;
+    const dx = e.clientX - startX;
+    const dy = e.clientY - startY;
+
+    let nx = origX + dx;
+    let ny = origY + dy;
+
+    if (e.shiftKey){
+      const snap = 10;
+      nx = Math.round(nx / snap) * snap;
+      ny = Math.round(ny / snap) * snap;
+    }
+
+    const cRect = containerEl.getBoundingClientRect();
+    const nRect = nodeEl.getBoundingClientRect();
+    const w = nRect.width;
+    const h = nRect.height;
+    nx = clamp(nx, 8, cRect.width - w - 8);
+    ny = clamp(ny, 8, cRect.height - h - 8);
+
+    nodeEl.style.left = `${nx}px`;
+    nodeEl.style.top = `${ny}px`;
+    drawArchEdges();
+  };
+
+  const onPointerUp = (e) => {
+    if (!dragging) return;
+    dragging = false;
+    setTimeout(()=> nodeEl.classList.remove("dragging"), 0);
+    try{ nodeEl.releasePointerCapture?.(e.pointerId); } catch {}
+    drawArchEdges();
+  };
+
+  nodeEl.addEventListener("pointerdown", onPointerDown);
+  window.addEventListener("pointermove", onPointerMove);
+  window.addEventListener("pointerup", onPointerUp);
+}
+
+// Zoom state
+let zoomLevel = 1;
+const ZOOM_MIN = 0.5;
+const ZOOM_MAX = 2;
+const ZOOM_STEP = 0.1;
+
+function setZoom(level) {
+  zoomLevel = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, level));
+  const canvas = $("#archCanvas");
+  // Scale the canvas and adjust its dimensions to match scaled size for proper scrolling
+  canvas.style.transform = `scale(${zoomLevel})`;
+  canvas.style.width = `${1200}px`;
+  canvas.style.height = `${800}px`;
+  // Set the wrapper size to the scaled dimensions so scrollbars work correctly
+  canvas.style.marginRight = `${1200 * (zoomLevel - 1)}px`;
+  canvas.style.marginBottom = `${800 * (zoomLevel - 1)}px`;
+  $("#zoomLevel").textContent = `${Math.round(zoomLevel * 100)}%`;
+}
+
+function zoomToFit() {
+  const grid = $("#archGrid");
+  const gridRect = grid.getBoundingClientRect();
+  const fitScale = Math.min(gridRect.width / 1200, gridRect.height / 800, 1);
+  setZoom(Math.max(ZOOM_MIN, fitScale - 0.05));
+}
+
+function init(){
+  // Architecture toolbar
+  const saveBtn = document.getElementById('saveLayoutBtn');
+  const resetBtn = document.getElementById('resetLayoutBtn');
+  const exportBtn = document.getElementById('exportLayoutBtn');
+  const importBtn = document.getElementById('importLayoutBtn');
+  saveBtn?.addEventListener('click', saveLayout);
+  resetBtn?.addEventListener('click', resetLayout);
+  exportBtn?.addEventListener('click', exportLayout);
+  importBtn?.addEventListener('click', importLayout);
+
+  // Zoom controls
+  $("#zoomInBtn")?.addEventListener('click', () => setZoom(zoomLevel + ZOOM_STEP));
+  $("#zoomOutBtn")?.addEventListener('click', () => setZoom(zoomLevel - ZOOM_STEP));
+  $("#zoomFitBtn")?.addEventListener('click', zoomToFit);
+
+  // Ctrl+scroll to zoom
+  $("#archGrid")?.addEventListener('wheel', (e) => {
+    if (e.ctrlKey || e.metaKey) {
+      e.preventDefault();
+      const delta = e.deltaY > 0 ? -ZOOM_STEP : ZOOM_STEP;
+      setZoom(zoomLevel + delta);
+    }
+  }, { passive: false });
+
+  const sel = $("#contextSelect");
+  DATA.contexts.forEach(c => sel.appendChild(el("option",{value:c.id}, c.label)));
+  sel.value = contextId;
+  sel.addEventListener("change", ()=>{contextId=sel.value; renderDetailPanel();});
+
+  // Search
+  $("#searchInput").addEventListener("input", (e)=>{
+    searchTerm = e.target.value.toLowerCase().trim();
+    renderOWASPList();
+    // Clear selection if it's no longer visible? No, keep it.
+  });
+
+  renderListSelect();
+  renderOWASPList();
+  renderArchitecture();
+  drawArchEdges();
+
+  $("#clearBtn").addEventListener("click", clearSelection);
+
+  const sw = $("#heatSwitch");
+  const toggleHeat = () => {
+    heatmapOn = !heatmapOn;
+    sw.classList.toggle("on", heatmapOn);
+    sw.setAttribute("aria-checked", heatmapOn ? "true":"false");
+    renderOWASPList();
+    updateHighlights();
+  };
+  sw.addEventListener("click", toggleHeat);
+  sw.addEventListener("keydown",(e)=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();toggleHeat();}});
+
+  document.addEventListener("keydown",(e)=>{
+    if(e.key==="Escape") clearSelection();
+    if(e.key.toLowerCase()==="h") toggleHeat();
+  });
+  window.addEventListener("resize", ()=>{drawArchEdges();});
+
+  setTimeout(()=>selectItem("owasp_llm","LLM01",true), 250);
+}
+
+function renderListSelect(){
+  const sel = $("#listSelect");
+  sel.innerHTML = "";
+  DATA.lists.forEach(l=>{
+    const opt = document.createElement("option");
+    opt.value = l.id;
+    opt.textContent = l.label;
+    if(l.id === activeTab) opt.selected = true;
+    sel.appendChild(opt);
+  });
+  
+  sel.addEventListener("change", (e)=>{
+    activeTab = e.target.value;
+    if(searchTerm){
+      searchTerm="";
+      $("#searchInput").value="";
+    }
+    renderOWASPList();
+    updateHighlights();
+  });
+}
+
+function uniqueListCountForItem(key){
+  const classIds = mapFrom.get(key) || [];
+  const lists = new Set();
+  for (const cid of classIds){
+    const keys = mapTo.get(cid) ? [...mapTo.get(cid)] : [];
+    keys.forEach(k => lists.add(k.split(":")[0]));
+  }
+  return lists.size;
+}
+
+function renderOWASPList(){
+  const container = $("#owaspList");
+  container.innerHTML = "";
+
+  // Search mode
+  if (searchTerm) {
+    let foundAny = false;
+    for (const list of DATA.lists){
+      const matches = list.items.filter(item => 
+        item.id.toLowerCase().includes(searchTerm) || 
+        item.label.toLowerCase().includes(searchTerm)
+      );
+      if (matches.length > 0){
+        foundAny = true;
+        container.appendChild(el("div", {
+          style:"padding:12px 6px 6px; color:var(--muted); font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; opacity:.8"
+        }, list.label));
+        
+        for (const item of matches){
+          renderItem(container, list, item);
+        }
+      }
+    }
+    if (!foundAny){
+      container.appendChild(el("div", {style:"padding:20px; text-align:center; color:var(--muted); font-size:13px; font-style:italic"}, "No matches found."));
+    }
+    return;
+  }
+
+  // Normal mode
+  const list = byListId[activeTab];
+  for (const item of list.items){
+    renderItem(container, list, item);
+  }
+}
+
+function renderItem(container, list, item){
+  const key = `${list.id}:${item.id}`;
+  const mapped = mapFrom.get(key) || [];
+  const reuse = uniqueListCountForItem(key);
+
+  const btn = el("button",{
+    class:"item",
+    dataset:{key},
+    type:"button",
+    onclick: ()=>selectItem(list.id,item.id,true)
+  },
+    el("div",{class:"left"},
+      el("span",{class:"badge"}, item.id),
+      el("span",{class:"label"}, item.label)
+    ),
+    el("span",{class:"mini"}, `${mapped.length} ↔`)
+  );
+
+  if (heatmapOn){
+    const score = clamp(Math.round(mapped.reduce((acc,cid)=>acc + classListCounts[cid],0)/Math.max(1,mapped.length)), 1, 6);
+    btn.classList.add(`heat${score}`);
+    btn.querySelector(".mini").textContent = `${reuse} lists`;
+  }
+  container.appendChild(btn);
+}
+
+
+function renderArchitecture(){
+  const canvas = $("#archCanvas");
+  const grid = $("#archGrid");
+  $$(".archNode", canvas).forEach(n=>n.remove());
+
+  // Apply persisted positions if present
+  const persisted = loadLayout();
+  for (const n of DATA.arch.nodes){
+    const pos = persisted?.[n.id];
+    const x = typeof pos?.x === "number" ? pos.x : n.x;
+    const y = typeof pos?.y === "number" ? pos.y : n.y;
+
+    const node = el("div",{
+      class:"archNode",
+      dataset:{nodeid:n.id},
+      style:`left:${x}px;top:${y}px;`,
+      onclick: ()=>{
+        // If we just dragged, ignore click-to-focus
+        if (node.classList.contains("dragging")) return;
+        focusNode(n.id);
+      }
+    },
+      el("div",{class:"hdr"},
+        el("div",{class:"leftStack"},
+          el("div",{class:"iconWrap", "aria-hidden":"true"}, iconFor(n.id)),
+          el("div",{class:"meta"},
+            el("div",{class:"name"}, n.name),
+            el("div",{class:"desc"}, n.desc)
+          )
+        ),
+        el("div",{class:"zone"}, n.zone)
+      ),
+      el("div",{class:"chips"},
+        ...n.classes.slice(0,4).map(cid => el("span",{
+          class:"chip", 
+          title: byClassId[cid]?.name||cid,
+          onclick: `event.stopPropagation(); window.openClassModal('${cid}')`
+        }, cid))
+      )
+    );
+
+    makeDraggable(node, grid);
+    canvas.appendChild(node);
+  }
+}
+
+
+function focusNode(nodeId){
+  lastClickType="node";
+  focusedNode=nodeId;
+  selectedKeys.clear();
+  selectedClasses.clear();
+  const node = DATA.arch.nodes.find(x=>x.id===nodeId);
+  node.classes.forEach(cid=>selectedClasses.add(cid));
+  updateHighlights();
+  updateDRYMeter();
+  renderDetailPanel();
+}
+
+function selectItem(listId,itemId,replace=true){
+  lastClickType="item";
+  focusedNode=null;
+  if (replace){selectedKeys.clear(); selectedClasses.clear();}
+  const key = `${listId}:${itemId}`;
+  selectedKeys.add(key);
+  (mapFrom.get(key)||[]).forEach(cid=>selectedClasses.add(cid));
+  updateHighlights();
+  updateDRYMeter();
+  renderDetailPanel();
+}
+
+function clearSelection(){
+  selectedKeys.clear();
+  selectedClasses.clear();
+  focusedNode=null;
+  lastClickType=null;
+  updateHighlights();
+  updateDRYMeter();
+  renderDetailPanel();
+}
+
+function updateHighlights(){
+  // OWASP items
+  $$("#owaspList .item").forEach(btn=>{
+    const key = btn.dataset.key;
+    const isSelected = selectedKeys.has(key) && lastClickType==="item";
+    const dim = selectedKeys.size>0 && !selectedKeys.has(key);
+    btn.classList.toggle("selected", isSelected);
+    btn.classList.toggle("dim", dim);
+  });
+
+  // Nodes
+  const hasFocus = selectedClasses.size>0;
+  $$("#archGrid .archNode").forEach(ne=>{
+    const nid = ne.dataset.nodeid;
+    const node = DATA.arch.nodes.find(x=>x.id===nid);
+    const touches = node.classes.some(cid=>selectedClasses.has(cid));
+    const dim = hasFocus && !touches;
+    const isSel = lastClickType==="node" && focusedNode===nid;
+    ne.classList.toggle("selected", isSel);
+    ne.classList.toggle("related", !isSel && touches && hasFocus);
+    ne.classList.toggle("dim", dim);
+    if (!heatmapOn) ne.classList.remove("hot");
+    else ne.classList.toggle("hot", touches && selectedClasses.size>=2 && node.classes.filter(c=>selectedClasses.has(c)).length>=2);
+  });
+
+  const selCount = $("#selCount");
+  if (selCount) selCount.textContent = String(selectedKeys.size || selectedClasses.size);
+  drawArchEdges();
+}
+
+function updateDRYMeter(){
+  const meter = $("#dryMeter");
+  if (!meter) return;
+  if (lastClickType==="node" && focusedNode){
+    const node = DATA.arch.nodes.find(x=>x.id===focusedNode);
+    meter.textContent = `${node.classes.length} classes touch this node`;
+    return;
+  }
+  const totalItems = selectedKeys.size;
+  if (!totalItems){ meter.textContent="—"; return; }
+  const cset = new Set();
+  for (const k of selectedKeys){ (mapFrom.get(k)||[]).forEach(cid=>cset.add(cid)); }
+  const ratio = 1 - (cset.size / totalItems);
+  const pct = Math.round(clamp(ratio,0,0.98)*100);
+  meter.textContent = `${pct}% duplication compressed`;
+}
+
+function renderDetailPanel(){
+  const t = $("#detailTitle");
+  const b = $("#detailBody");
+  b.innerHTML = "";
+
+  if (!selectedKeys.size && !selectedClasses.size){
+    t.textContent = "Select an OWASP item or a node";
+    b.appendChild(el("p",{}, "Pick an OWASP item on the left to see which canonical classes apply and which architecture nodes light up. Or click a node to see which classes typically land there."));
+    return;
+  }
+
+  if (lastClickType==="node" && focusedNode){
+    const node = DATA.arch.nodes.find(x=>x.id===focusedNode);
+    t.textContent = `${node.name} — ${node.zone}`;
+    b.appendChild(el("p",{}, node.desc));
+    const ul = el("div",{class:"pillrow"});
+    node.classes.forEach(cid => {
+      ul.appendChild(el("button",{
+        class:"pill", 
+        style:"cursor:pointer; border-color:var(--accent); color:var(--ink);",
+        onclick:`window.openClassModal('${cid}')`
+      }, `${cid}: ${byClassId[cid].name}`));
+    });
+    b.appendChild(el("div",{class:"box"}, el("h4",{}, "Canonical classes (Click for details)"), ul));
+    return;
+  }
+
+  if (lastClickType==="item" && selectedKeys.size){
+    const key = [...selectedKeys][0];
+    const [lid,iid] = key.split(":");
+    const item = byListId[lid].items.find(x=>x.id===iid);
+    t.textContent = `${item.id} — ${item.label}`;
+    const classIds = mapFrom.get(key)||[];
+    const ul = el("div",{class:"pillrow"});
+    classIds.forEach(cid => {
+      ul.appendChild(el("button",{
+        class:"pill",
+        style:"cursor:pointer; border-color:var(--accent); color:var(--ink);",
+        onclick:`window.openClassModal('${cid}')`
+      }, `${cid}: ${byClassId[cid].name}`));
+    });
+    b.appendChild(el("div",{class:"box"}, el("h4",{}, "Mapped canonical classes (Click for details)"), ul));
+
+    const touched = DATA.arch.nodes.filter(n=> n.classes.some(cid=>classIds.includes(cid)));
+    const ul2 = el("ul",{});
+    touched.forEach(n=> ul2.appendChild(el("li",{}, `${n.name} (${n.zone})`)));
+    b.appendChild(el("div",{class:"box"}, el("h4",{}, "Architecture touch points"), ul2));
+
+    // One class detail (first) for punch
+    if (classIds[0]){
+      const c = DATA.classDetails[classIds[0]];
+      b.appendChild(el("div",{class:"box"},
+        el("h4",{}, `Definition (${classIds[0]})`),
+        el("p",{}, c.definition),
+        el("h4",{}, "Context-specific manifestation"),
+        el("p",{}, c.ex[contextId] || "")
+      ));
+    }
+  }
+}
+
+function drawArchEdges(){
+  const svg = $("#archSvg");
+  svg.innerHTML = "";
+  const canvas = $("#archCanvas");
+  // Use fixed canvas dimensions for consistent SVG sizing
+  const canvasW = 1200;
+  const canvasH = 800;
+  svg.setAttribute("width", canvasW);
+  svg.setAttribute("height", canvasH);
+  svg.setAttribute("viewBox", `0 0 ${canvasW} ${canvasH}`);
+  const rect = { left: canvas.getBoundingClientRect().left, top: canvas.getBoundingClientRect().top, width: canvasW, height: canvasH };
+
+  const nodeRect = (id) => {
+    const eln = $(`.archNode[data-nodeid="${id}"]`, canvas);
+    if (!eln) return null;
+    // Use position from style to avoid zoom scaling issues
+    const x = parseFloat(eln.style.left) || 0;
+    const y = parseFloat(eln.style.top) || 0;
+    const w = eln.offsetWidth;
+    const h = eln.offsetHeight;
+    return { x, y, w, h };
+  };
+
+  const mkPath = (d, stroke, width=2, dash="") => {
+    const p = document.createElementNS("http://www.w3.org/2000/svg","path");
+    p.setAttribute("d", d);
+    p.setAttribute("fill","none");
+    p.setAttribute("stroke", stroke);
+    p.setAttribute("stroke-width", String(width));
+    p.setAttribute("stroke-linecap","round");
+    if (dash) p.setAttribute("stroke-dasharray", dash);
+    return p;
+  };
+
+  for (const [a,b] of DATA.arch.edges){
+    const ra = nodeRect(a), rb = nodeRect(b);
+    if (!ra || !rb) continue;
+    const x1 = ra.x + ra.w, y1 = ra.y + ra.h/2;
+    const x2 = rb.x, y2 = rb.y + rb.h/2;
+    const dx = Math.max(60, Math.abs(x2-x1)*0.45);
+    const d = `M ${x1} ${y1} C ${x1+dx} ${y1}, ${x2-dx} ${y2}, ${x2} ${y2}`;
+    svg.appendChild(mkPath(d, "rgba(255,255,255,.12)", 2));
+    if (selectedClasses.size){
+      const na = DATA.arch.nodes.find(n=>n.id===a);
+      const nb = DATA.arch.nodes.find(n=>n.id===b);
+      const ta = na.classes.some(c=>selectedClasses.has(c));
+      const tb = nb.classes.some(c=>selectedClasses.has(c));
+      if (ta && tb) svg.appendChild(mkPath(d, "rgba(116,240,197,.55)", 2.5, "6 6"));
+    }
+  }
+}
+
+window.openClassModal = function(cid){
+  const cls = byClassId[cid];
+  const det = DATA.classDetails[cid];
+  if(!cls || !det) return;
+
+  const m = document.getElementById("classModal");
+  document.getElementById("cmTitle").textContent = `${cid}: ${cls.name}`;
+  document.getElementById("cmDef").textContent = det.definition;
+  document.getElementById("cmExploit").textContent = det.exploit;
+  
+  const cDiv = document.getElementById("cmControls");
+  cDiv.innerHTML = "";
+  det.controls.forEach(c => {
+    const p = document.createElement("span");
+    p.className = "pill";
+    p.textContent = c;
+    cDiv.appendChild(p);
+  });
+  
+  m.classList.add("open");
+}
+
+document.addEventListener("DOMContentLoaded", init);
+</script>
+
+<!-- Help Modal -->
+<div class="modalOverlay" id="helpModal">
+  <div class="modal">
+    <h3>How to use this</h3>
+    <div class="kv">Click an OWASP item → highlight architecture nodes</div>
+    <div class="kv">Press <span class="kbd">H</span> toggle heatmap</div>
+    <div class="kv">Press <span class="kbd">Esc</span> clear selection</div>
+    <p class="note">This diagram is intentionally generic (Cloudflare/WAF/K8s/etc.). If you want, we can swap in <em>your</em> real components and adjust the mappings.</p>
+  </div>
+</div>
+
+<!-- Class Detail Modal -->
+<div class="modalOverlay" id="classModal">
+  <div class="modal" style="max-width:500px">
+    <button class="modalClose" id="classModalClose" type="button">
+      <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+    </button>
+    <h3 id="cmTitle"></h3>
+    <div class="kv" id="cmDef"></div>
+    <div style="margin-top:12px">
+      <div style="font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; margin-bottom:4px">Exploit Mechanism</div>
+      <p class="note" id="cmExploit" style="margin-top:0"></p>
+    </div>
+    <div style="margin-top:12px">
+      <div style="font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; margin-bottom:4px">Proactive Controls</div>
+      <div class="pillrow" id="cmControls"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const modal = document.getElementById("helpModal");
+  const btn = document.getElementById("helpBtn");
+
+  btn.addEventListener("click", () => modal.classList.add("open"));
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) modal.classList.remove("open");
+  });
+  
+  const cModal = document.getElementById("classModal");
+  const cClose = document.getElementById("classModalClose");
+  cClose.addEventListener("click", () => cModal.classList.remove("open"));
+  cModal.addEventListener("click", (e) => {
+    if (e.target === cModal) cModal.classList.remove("open");
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      modal.classList.remove("open");
+      cModal.classList.remove("open");
+    }
+  });
+})();
+</script>
+</body>
+</html>
