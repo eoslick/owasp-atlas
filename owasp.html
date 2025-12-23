@@ -112,24 +112,6 @@
     .cta .dot{width:8px;height:8px;border-radius:50%;background:rgba(11,15,26,.65)}
     .cta.primary .dot{background:rgba(5,32,30,.75)}
 
-    .controls{
-      margin-top:14px;
-      display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:space-between;
-    }
-    .leftControls,.rightControls{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
-
-    .control{
-      display:flex; gap:8px; align-items:center;
-      padding:9px 12px; border:1px solid var(--border); border-radius:999px;
-      background: rgba(255,255,255,.85);
-      box-shadow: 0 10px 24px rgba(11,15,26,.06);
-    }
-    label{font-size:12px;color:var(--muted)}
-    select{
-      background:transparent;color:var(--ink);border:0; outline:none;
-      font-size:12px; font-family:var(--sans);
-    }
-
     .toggle{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);user-select:none}
     .switch{width:42px;height:24px;border-radius:999px;background:rgba(11,15,26,.10);border:1px solid var(--border);position:relative;cursor:pointer;transition:.18s}
     .switch::after{content:"";width:18px;height:18px;border-radius:50%;background:#fff;position:absolute;top:2px;left:2px;transition:transform .18s ease}
@@ -731,19 +713,12 @@ svg {
     <h1>OWASP Atlas: Canonical Risks, Real Architecture</h1>
     <div class="tagline">Map any OWASP Top 10 entry to ten reusable risk classes and see exactly where it lands across clients, edge, runtime, and data layers.</div>
 
-    <div class="controls">
-      <div class="leftControls">
-        <div class="control">
-          <label for="contextSelect">Context emphasis</label>
-          <select id="contextSelect"></select>
-        </div>
-        <div class="toggle">
-          <span class="switch" id="heatSwitch" role="switch" aria-checked="false" tabindex="0"></span>
-          <span>Show duplication heatmap</span>
-        </div>
-        <button class="btn" id="clearBtn" type="button">Clear selection</button>
+    <div class="controls" style="margin-top:14px; display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+      <div class="toggle">
+        <span class="switch" id="heatSwitch" role="switch" aria-checked="false" tabindex="0"></span>
+        <span>Show duplication heatmap</span>
       </div>
-
+      <button class="btn" id="clearBtn" type="button">Clear selection</button>
     </div>
   </div>
 
@@ -827,13 +802,6 @@ svg {
 
 <script>
 const DATA = {
-  contexts: [
-    { id: "web", label: "Web" },
-    { id: "api", label: "API" },
-    { id: "llm", label: "LLM" },
-    { id: "agentic", label: "Agentic" },
-    { id: "hitl", label: "Human-in-the-loop" }
-  ],
   classes: [
     { id:"C01", name:"Control & Instruction Injection" },
     { id:"C02", name:"Identity & Authorization Failure" },
@@ -1052,7 +1020,6 @@ for (const c of DATA.classes){
 
 let activeTab = DATA.lists[0].id;
 let heatmapOn = false;
-let contextId = DATA.contexts[0].id;
 let searchTerm = "";
 const selectedKeys = new Set();
 const selectedClasses = new Set();
@@ -1328,11 +1295,6 @@ function init(){
       setZoom(zoomLevel + delta);
     }
   }, { passive: false });
-
-  const sel = $("#contextSelect");
-  DATA.contexts.forEach(c => sel.appendChild(el("option",{value:c.id}, c.label)));
-  sel.value = contextId;
-  sel.addEventListener("change", ()=>{contextId=sel.value; renderDetailPanel();});
 
   // Search
   $("#searchInput").addEventListener("input", (e)=>{
@@ -1646,7 +1608,7 @@ function renderDetailPanel(){
         el("h4",{}, `Definition (${classIds[0]})`),
         el("p",{}, c.definition),
         el("h4",{}, "Context-specific manifestation"),
-        el("p",{}, c.ex[contextId] || "")
+        el("p",{}, c.ex.web || "")
       ));
     }
   }
