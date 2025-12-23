@@ -969,6 +969,7 @@ const byListId = Object.fromEntries(DATA.lists.map(l=>[l.id,l]));
 const byClassId = Object.fromEntries(DATA.classes.map(c=>[c.id,c]));
 const mapFrom = new Map();
 const mapTo = new Map();
+const sortClassIds = (ids=[]) => [...ids].sort((a,b)=>a.localeCompare(b, undefined, {numeric:true}));
 for (const m of DATA.mappings){
   mapFrom.set(m.from, m.to.slice());
   for (const cid of m.to){
@@ -1404,7 +1405,7 @@ function renderArchitecture(){
         el("div",{class:"zone"}, n.zone)
       ),
       el("div",{class:"chips"},
-        ...n.classes.slice(0,4).map(cid => el("span",{
+        ...sortClassIds(n.classes).slice(0,4).map(cid => el("span",{
           class:"chip", 
           title: byClassId[cid]?.name||cid,
           onclick: `event.stopPropagation(); window.openClassModal('${cid}')`
@@ -1513,7 +1514,7 @@ function renderDetailPanel(){
     t.textContent = `${node.name} — ${node.zone}`;
     b.appendChild(el("p",{}, node.desc));
     const ul = el("div",{class:"pillrow"});
-    node.classes.forEach(cid => {
+    sortClassIds(node.classes).forEach(cid => {
       ul.appendChild(el("button",{
         class:"pill", 
         style:"cursor:pointer; border-color:var(--accent); color:var(--ink);",
@@ -1529,7 +1530,7 @@ function renderDetailPanel(){
     const [lid,iid] = key.split(":");
     const item = byListId[lid].items.find(x=>x.id===iid);
     t.textContent = `${item.id} — ${item.label}`;
-    const classIds = mapFrom.get(key)||[];
+    const classIds = sortClassIds(mapFrom.get(key)||[]);
     const ul = el("div",{class:"pillrow"});
     classIds.forEach(cid => {
       ul.appendChild(el("button",{
