@@ -112,16 +112,25 @@
     .cta .dot{width:8px;height:8px;border-radius:50%;background:rgba(11,15,26,.65)}
     .cta.primary .dot{background:rgba(5,32,30,.75)}
 
-    .archPanel{margin-top:16px;}
-    .bottomGrid{
+    .layout{
       margin-top:16px;
       display:grid;
-      grid-template-columns: minmax(360px, 420px) minmax(0, 1fr);
-      gap:14px;
+      grid-template-columns: minmax(320px, 380px) minmax(0, 1fr);
+      gap:18px;
       align-items:start;
     }
+    .leftColumn{
+      display:flex;
+      flex-direction:column;
+      gap:14px;
+      position:sticky;
+      top:24px;
+      align-self:start;
+    }
+    .archPanel{align-self:start}
     @media (max-width: 1080px){
-      .bottomGrid{grid-template-columns:1fr}
+      .layout{grid-template-columns:1fr}
+      .leftColumn{position:static}
     }
 
     .panel{
@@ -139,6 +148,31 @@
       background: rgba(246,247,249,.85);
     }
     .panelHeader h2{margin:0;font-size:12px;letter-spacing:.28px;color:var(--muted);font-weight:800;text-transform:uppercase}
+    .panelHeader h2 .stepBadge{margin-right:8px}
+    .panelSubhead{padding:8px 14px 0;font-size:12px;color:var(--muted);line-height:1.4}
+    .listSelect{
+      width:100%;
+      background:rgba(11,15,26,.04);
+      border:1px solid var(--border);
+      border-radius:8px;
+      color:var(--ink);
+      font-size:12px;
+      padding:6px 10px;
+    }
+    .stepBadge{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      font-size:10px;
+      letter-spacing:.4px;
+      text-transform:uppercase;
+      background: rgba(21,196,179,.18);
+      border:1px solid rgba(21,196,179,.45);
+      color: var(--ink);
+      border-radius:999px;
+      padding:2px 8px;
+    }
+    .infoTitle .stepBadge{margin-right:6px;margin-bottom:4px}
 
     .tabs{display:flex; gap:6px; flex-wrap:wrap}
     .tab{
@@ -689,78 +723,84 @@ svg {
 
   </div>
 
-  <section class="panel archPanel">
-    <div class="panelHeader">
-      <h2>Architecture Context</h2>
-      <div class="tabs"><span class="pill">Click nodes to focus a subsystem</span></div>
-    </div>
-
-    <div class="content">
-      <div class="archWrap">
-        <div class="archGrid" id="archGrid">
-          <div class="archToolbar" aria-label="Architecture tools">
-            <div class="zoomControls">
-              <button class="archBtn" id="zoomOutBtn" type="button">−</button>
-              <span class="zoomLevel" id="zoomLevel">100%</span>
-              <button class="archBtn" id="zoomInBtn" type="button">+</button>
-              <button class="archBtn" id="zoomFitBtn" type="button">Fit</button>
-            </div>
-            <button class="archBtn primary" id="saveLayoutBtn" type="button">Save layout</button>
-            <button class="archBtn" id="resetLayoutBtn" type="button">Reset layout</button>
-            <button class="archBtn" id="exportLayoutBtn" type="button">Export JSON</button>
-            <button class="archBtn" id="importLayoutBtn" type="button">Import JSON</button>
+  <div class="layout">
+    <div class="leftColumn">
+      <section class="panel sidebar">
+        <div class="panelHeader">
+          <h2><span class="stepBadge">Step 1</span> Pick an OWASP list</h2>
+          <button class="helpBtn" id="helpBtn" type="button" aria-label="Help">
+            <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+              <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            </svg>
+          </button>
+        </div>
+        <div class="panelSubhead">Choose a list, then click any item to light up the architecture.</div>
+        <div style="display:flex; justify-content:flex-end; margin-bottom:8px;">
+          <select id="listSelect" class="listSelect"></select>
+        </div>
+        <div class="content">
+          <div class="searchRow">
+            <svg class="searchIcon" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <input type="text" id="searchInput" class="searchInput" placeholder="Search vulnerabilities..." aria-label="Search" autocomplete="off">
           </div>
-          <div class="archHint">Drag nodes to rearrange • Hold <span class="kbd">Shift</span> to snap • Scroll to pan • Ctrl+scroll to zoom</div>
+          <div class="list" id="owaspList"></div>
+        </div>
+      </section>
 
-          <div class="archCanvas" id="archCanvas">
-            <svg class="archSvg" id="archSvg"></svg>
-            <div class="layerLabel" style="left:12px;top:12px;">Client</div>
-            <div class="layerLabel" style="left:12px;top:186px;">Edge / Perimeter</div>
-            <div class="layerLabel" style="left:12px;top:336px;">Kubernetes / Runtime</div>
-            <div class="layerLabel" style="left:12px;top:520px;">Data / External</div>
+      <section class="panel detailPanel infoPanel" id="detailPanel">
+        <div class="infoTitle">
+          <div>
+            <span class="stepBadge">Step 2</span>
+            <h3 id="detailTitle">Select an OWASP item or a node</h3>
+          </div>
+          <div class="kvs">
           </div>
         </div>
-
-        <div class="legend">
-          <div class="dot sel"></div><span>Selected</span>
-          <div class="dot rel"></div><span>Related</span>
+        <div class="infoBody" id="detailBody">
+          <p>Pick an OWASP item on the left to see (1) canonical classes and (2) where they touch the architecture. Or click an architecture node to see which canonical classes tend to land there.</p>
         </div>
-      </div>
+      </section>
     </div>
-  </section>
 
-  <div class="bottomGrid">
-    <section class="panel sidebar">
+    <section class="panel archPanel">
       <div class="panelHeader">
-        <h2>OWASP Lists</h2>
-        <button class="helpBtn" id="helpBtn" type="button" aria-label="Help">
-          <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10"></circle>
-            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
-            <line x1="12" y1="17" x2="12.01" y2="17"></line>
-          </svg>
-        </button>
-        <div style="flex:1; display:flex; justify-content:flex-end">
-          <select id="listSelect" style="max-width:180px; padding:4px 8px; border-radius:6px; border:1px solid var(--border)"></select>
-        </div>
+        <h2>Architecture Context</h2>
+        <div class="tabs"><span class="pill">Click nodes to focus a subsystem</span></div>
       </div>
-      <div class="content">
-        <div class="searchRow">
-          <svg class="searchIcon" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-          <input type="text" id="searchInput" class="searchInput" placeholder="Search vulnerabilities..." aria-label="Search" autocomplete="off">
-        </div>
-        <div class="list" id="owaspList"></div>
-      </div>
-    </section>
 
-    <section class="panel detailPanel infoPanel" id="detailPanel">
-      <div class="infoTitle">
-        <h3 id="detailTitle">Select an OWASP item or a node</h3>
-        <div class="kvs">
+      <div class="content">
+        <div class="archWrap">
+          <div class="archGrid" id="archGrid">
+            <div class="archToolbar" aria-label="Architecture tools">
+              <div class="zoomControls">
+                <button class="archBtn" id="zoomOutBtn" type="button">−</button>
+                <span class="zoomLevel" id="zoomLevel">100%</span>
+                <button class="archBtn" id="zoomInBtn" type="button">+</button>
+                <button class="archBtn" id="zoomFitBtn" type="button">Fit</button>
+              </div>
+              <button class="archBtn primary" id="saveLayoutBtn" type="button">Save layout</button>
+              <button class="archBtn" id="resetLayoutBtn" type="button">Reset layout</button>
+              <button class="archBtn" id="exportLayoutBtn" type="button">Export JSON</button>
+              <button class="archBtn" id="importLayoutBtn" type="button">Import JSON</button>
+            </div>
+            <div class="archHint">Drag nodes to rearrange • Hold <span class="kbd">Shift</span> to snap • Scroll to pan • Ctrl+scroll to zoom</div>
+
+            <div class="archCanvas" id="archCanvas">
+              <svg class="archSvg" id="archSvg"></svg>
+              <div class="layerLabel" style="left:12px;top:12px;">Client</div>
+              <div class="layerLabel" style="left:12px;top:186px;">Edge / Perimeter</div>
+              <div class="layerLabel" style="left:12px;top:336px;">Kubernetes / Runtime</div>
+              <div class="layerLabel" style="left:12px;top:520px;">Data / External</div>
+            </div>
+          </div>
+
+          <div class="legend">
+            <div class="dot sel"></div><span>Selected</span>
+            <div class="dot rel"></div><span>Related</span>
+          </div>
         </div>
-      </div>
-      <div class="infoBody" id="detailBody">
-        <p>Pick an OWASP item on the left to see (1) canonical classes and (2) where they touch the architecture. Or click an architecture node to see which canonical classes tend to land there.</p>
       </div>
     </section>
   </div>
