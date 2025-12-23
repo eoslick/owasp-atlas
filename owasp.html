@@ -630,8 +630,9 @@ svg {
 <body>
 <div class="wrap">
   <div class="top">
-    <h1>OWASP Atlas: Canonical Risks, Real Architecture</h1>
-    <div class="tagline">Map any OWASP Top 10 entry to ten reusable risk classes and see exactly where it lands across clients, edge, runtime, and data layers.</div>
+    <h1>OWASP Atlas: Core Flaws, Real Architecture</h1>
+    <div class="tagline">Every OWASP list describes the same ten flaws — just in different contexts.</div>
+    <p class="tagline" style="margin-top:10px;">Prompt injection (LLM), SQL injection (Web), and goal hijacking (Agentic) are all the same flaw: untrusted input alters instructions. Each has its own solution and it only needs to be addressed once.</p>
 
   </div>
 
@@ -659,7 +660,7 @@ svg {
 
       <section class="panel detailPanel" id="detailPanel">
         <div class="panelHeader">
-          <h2>Canonical threats</h2>
+          <h2>Core flaws</h2>
           <button class="helpBtn" type="button" aria-label="Help">
             <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="12" cy="12" r="10"></circle>
@@ -668,7 +669,7 @@ svg {
             </svg>
           </button>
         </div>
-        <div class="panelSubhead">See canonical classes and architecture touch points for any selection.</div>
+        <div class="panelSubhead">See core flaws and architecture touch points for any selection.</div>
         <div class="content detailContent">
           <div class="infoTitle">
             <h3 id="detailTitle">Select an OWASP item or a node</h3>
@@ -676,7 +677,7 @@ svg {
             </div>
           </div>
           <div class="infoBody" id="detailBody">
-            <p>Pick an OWASP item on the left to see (1) canonical classes and (2) where they touch the architecture. Or click an architecture node to see which canonical classes tend to land there.</p>
+            <p>Pick an OWASP item on the left to see (1) core flaws and (2) where they touch the architecture. Or click an architecture node to see which core flaws tend to land there.</p>
           </div>
         </div>
       </section>
@@ -1286,7 +1287,7 @@ function renderItem(container, list, item){
       el("span",{class:"badge"}, item.id),
       el("div",{class:"labelBlock"},
         el("span",{class:"label"}, item.label),
-        el("span",{class:"mini"}, `${mapped.length} canonical classes`)
+        el("span",{class:"mini"}, `${mapped.length} core flaws`)
       )
     )
   );
@@ -1428,7 +1429,7 @@ function renderDetailPanel(){
 
   if (!selectedKeys.size && !selectedClasses.size){
     t.textContent = "Select an OWASP item or a node";
-    b.appendChild(el("p",{}, "Pick an OWASP item on the left to see which canonical classes apply and which architecture nodes light up. Or click a node to see which classes typically land there."));
+    b.appendChild(el("p",{}, "Pick an OWASP item on the left to see which core flaws apply and which architecture nodes light up. Or click a node to see which flaws typically land there."));
     return;
   }
 
@@ -1444,7 +1445,7 @@ function renderDetailPanel(){
         onclick:`window.openClassModal('${cid}')`
       }, `${cid}: ${byClassId[cid].name}`));
     });
-    b.appendChild(el("div",{class:"box"}, el("h4",{}, "Canonical classes (Click for details)"), ul));
+    b.appendChild(el("div",{class:"box"}, el("h4",{}, "Core flaws (click for details)"), ul));
     return;
   }
 
@@ -1462,7 +1463,7 @@ function renderDetailPanel(){
         onclick:`window.openClassModal('${cid}')`
       }, `${cid}: ${byClassId[cid].name}`));
     });
-    b.appendChild(el("div",{class:"box"}, el("h4",{}, "Mapped canonical classes (Click for details)"), ul));
+    b.appendChild(el("div",{class:"box"}, el("h4",{}, "Mapped core flaws (click for details)"), ul));
 
     const touched = DATA.arch.nodes.filter(n=> n.classes.some(cid=>classIds.includes(cid)));
     const ul2 = el("ul",{});
