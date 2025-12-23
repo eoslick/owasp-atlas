@@ -52,31 +52,6 @@
       backdrop-filter: blur(10px);
     }
 
-    .brandRow{
-      display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;
-      margin-bottom:10px;
-    }
-    .brand{
-      display:flex;align-items:center;gap:10px;min-width:260px;
-    }
-    .mark{
-      width:34px;height:34px;border-radius:10px;
-      background: linear-gradient(135deg, rgba(11,15,26,.95), rgba(11,15,26,.78));
-      position:relative;
-      box-shadow: 0 10px 24px rgba(11,15,26,.12);
-      border:1px solid rgba(11,15,26,.10);
-    }
-    .mark::after{
-      content:"";
-      position:absolute;inset:8px 9px 8px 9px;
-      border-radius:8px;
-      border:2px solid rgba(21,196,179,.92);
-      box-shadow: inset 0 0 0 2px rgba(21,196,179,.10);
-    }
-    .brandText{display:flex;flex-direction:column;gap:2px}
-    .brandName{font-weight:800;letter-spacing:.2px;font-size:14px}
-    .brandSub{color:var(--muted);font-size:12px}
-
     h1{margin:0;font-size:22px;letter-spacing:.2px}
     .tagline{margin-top:6px;color:var(--muted);max-width:92ch;line-height:1.45}
 
@@ -424,13 +399,6 @@
     .archSvg path{opacity:.9}
 
   
-    .mark{width:34px;height:34px;border-radius:10px;background:rgba(255,255,255,.04);position:relative;
-      box-shadow:0 12px 28px rgba(0,0,0,.35);border:1px solid rgba(242,245,255,.10);}
-    .mark::before{content:"";position:absolute;inset:6px 7px;border-radius:10px;border:2px solid rgba(29,214,197,.70);
-      box-shadow: inset 0 0 0 2px rgba(29,214,197,.12);}
-    .mark::after{content:"T+";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-      font-weight:900;letter-spacing:.4px;font-size:12px;color:rgba(242,245,255,.90);
-      text-shadow:0 0 18px rgba(29,214,197,.30);}
 
   
   /* ===== True Positives homepage typography + color tuning (approx) ===== */
@@ -450,7 +418,7 @@
 
   /* Layout density + type */
   .wrap{max-width: 1160px;}
-  h1,h2,h3,.brandTitle{font-family: var(--display); letter-spacing: -0.02em;}
+  h1,h2,h3{font-family: var(--display); letter-spacing: -0.02em;}
   h1{font-weight:900; line-height:1.06; font-size: 36px;}
   @media (min-width: 920px){ h1{font-size: 44px;} }
   .subtitle{font-size: 14px; line-height:1.55; color: var(--muted);}
@@ -515,8 +483,6 @@
   .archHint{background: rgba(255,255,255,.04); border-color: rgba(255,255,255,.12); color: rgba(255,255,255,.70);}
 
   /* Mark (logo) teal edge */
-  .mark::before{border-color: rgba(0,215,200,.78);}
-  .mark::after{text-shadow: 0 0 18px rgba(0,215,200,.34);}
 
 
 /* ===== Contrast safety overrides ===== */
@@ -710,15 +676,6 @@ svg {
 <body>
 <div class="wrap">
   <div class="top">
-    <div class="brandRow">
-      <div class="brand">
-        <div class="mark" aria-hidden="true"></div>
-        <div class="brandText">
-          <div class="brandName">True Positives-inspired</div>
-          <div class="brandSub">Clean, enterprise AppSec look (for demos)</div>
-        </div>
-      </div>
-    </div>
     <h1>OWASP Atlas: Canonical Risks, Real Architecture</h1>
     <div class="tagline">Map any OWASP Top 10 entry to ten reusable risk classes and see exactly where it lands across clients, edge, runtime, and data layers.</div>
 
