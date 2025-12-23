@@ -640,7 +640,7 @@ svg {
       <section class="panel sidebar">
         <div class="panelHeader">
           <h2>OWASP lists</h2>
-          <button class="helpBtn" id="helpBtn" type="button" aria-label="Help">
+          <button class="helpBtn" type="button" aria-label="Help">
             <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="12" cy="12" r="10"></circle>
               <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
@@ -660,7 +660,15 @@ svg {
       <section class="panel detailPanel infoPanel" id="detailPanel">
         <div class="panelHeader">
           <h2>Canonical threats</h2>
+          <button class="helpBtn" type="button" aria-label="Help">
+            <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+              <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            </svg>
+          </button>
         </div>
+        <div class="panelSubhead">See canonical classes and architecture touch points for any selection.</div>
         <div class="content detailContent">
           <div class="infoTitle">
             <h3 id="detailTitle">Select an OWASP item or a node</h3>
@@ -1583,9 +1591,9 @@ document.addEventListener("DOMContentLoaded", init);
 <script>
 (function(){
   const modal = document.getElementById("helpModal");
-  const btn = document.getElementById("helpBtn");
-
-  btn.addEventListener("click", () => modal.classList.add("open"));
+  document.querySelectorAll('.helpBtn').forEach(btn => {
+    btn.addEventListener("click", () => modal.classList.add("open"));
+  });
   modal.addEventListener("click", (e) => {
     if (e.target === modal) modal.classList.remove("open");
   });
