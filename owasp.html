@@ -222,7 +222,8 @@
       flex:0 0 auto;
     }
     .label{font-size:13px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .mini{font-size:11px;color:var(--muted);padding:3px 7px;border-radius:999px;border:1px solid var(--border);background:rgba(11,15,26,.04);flex:0 0 auto}
+    .labelBlock{display:flex;flex-direction:column;gap:4px;min-width:0}
+    .mini{font-size:11px;color:var(--muted);padding:2px 6px;border-radius:999px;border:1px solid var(--border);background:rgba(11,15,26,.04);align-self:flex-start;white-space:nowrap}
     .item.selected{border-color: rgba(21,196,179,.60); background: rgba(21,196,179,.10)}
     .item.dim{opacity:.60}
 
@@ -1402,9 +1403,11 @@ function renderItem(container, list, item){
   },
     el("div",{class:"left"},
       el("span",{class:"badge"}, item.id),
-      el("span",{class:"label"}, item.label)
-    ),
-    el("span",{class:"mini"}, `${mapped.length} ↔`)
+      el("div",{class:"labelBlock"},
+        el("span",{class:"label"}, item.label),
+        el("span",{class:"mini"}, `${mapped.length} canonical classes`)
+      )
+    )
   );
 
   container.appendChild(btn);
