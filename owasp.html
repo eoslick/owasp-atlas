@@ -88,7 +88,7 @@
     .cta.primary .dot{background:rgba(5,32,30,.75)}
 
     .layout{margin-top:16px;display:flex;flex-direction:column;gap:18px}
-    .topGrid{display:grid;grid-template-columns: minmax(360px, 420px) minmax(0,1fr);gap:18px}
+    .topGrid{display:grid;grid-template-columns: minmax(360px, 420px) minmax(0,1fr);gap:18px;align-items:start}
     @media (max-width: 1080px){
       .topGrid{grid-template-columns:1fr}
     }
@@ -137,6 +137,9 @@
     }
 
     .content{padding:12px;display:grid;gap:10px}
+    .sidebar, .detailPanel{display:flex;flex-direction:column;max-height:460px}
+    .sidebar .content{flex:1;overflow:auto}
+    .detailPanel .infoBody{flex:1;overflow:auto}
 
     .list{display:flex;flex-direction:column;gap:8px}
     .item{
