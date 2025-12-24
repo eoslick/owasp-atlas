@@ -1512,7 +1512,13 @@ function renderListSelect(){
   sel.addEventListener("change", (e)=>{
     activeTab = e.target.value;
     renderOWASPList();
-    updateHighlights();
+    // Auto-select first item of the new list
+    const list = byListId[activeTab];
+    if (list && list.items.length > 0) {
+      selectItem(activeTab, list.items[0].id, true);
+    } else {
+      clearSelection();
+    }
   });
 }
 
@@ -1720,6 +1726,8 @@ function renderDetailPanel(){
     const item = byListId[lid].items.find(x=>x.id===iid);
     t.textContent = `${item.id} — ${item.label}`;
     const classIds = sortClassIds(mapFrom.get(key)||[]);
+
+    // Mapped core flaws section
     const ul = el("div",{class:"pillrow"});
     classIds.forEach(cid => {
       ul.appendChild(el("button",{
@@ -1730,19 +1738,58 @@ function renderDetailPanel(){
     });
     b.appendChild(el("div",{class:"box"}, el("h4",{}, "Mapped core flaws (click for details)"), ul));
 
+    // Where to defend section - show components with relevant controls
     const touched = DATA.arch.nodes.filter(n=> n.classes.some(cid=>classIds.includes(cid)));
-    const ul2 = el("ul",{});
-    touched.forEach(n=> ul2.appendChild(el("li",{}, `${n.name} (${n.zone})`)));
-    b.appendChild(el("div",{class:"box"}, el("h4",{}, "Architecture touch points"), ul2));
+    const defenseList = el("div",{style:"display:flex;flex-direction:column;gap:8px"});
+    touched.forEach(n => {
+      // Find which of the selected flaws apply to this node
+      const relevantFlaws = classIds.filter(cid => n.classes.includes(cid));
+      // Get unique controls from those flaws
+      const controls = new Set();
+      relevantFlaws.forEach(cid => {
+        const detail = DATA.classDetails[cid];
+        if (detail && detail.controls) {
+          detail.controls.slice(0,2).forEach(c => controls.add(c));
+        }
+      });
+      const controlText = controls.size > 0 ? [...controls].slice(0,2).join(", ") : "Review security controls";
 
-    // One class detail (first) for punch
-    if (classIds[0]){
-      const c = DATA.classDetails[classIds[0]];
+      defenseList.appendChild(el("div",{style:"font-size:12px;line-height:1.4"},
+        el("strong",{style:"color:var(--ink)"}, n.name),
+        el("span",{style:"color:var(--muted);margin-left:6px"}, `→ ${controlText}`)
+      ));
+    });
+    b.appendChild(el("div",{class:"box"},
+      el("h4",{}, "Where to defend"),
+      el("p",{style:"font-size:11px;color:var(--muted);margin-bottom:8px"}, "Architecture components to harden with recommended controls:"),
+      defenseList
+    ));
+
+    // Key controls section - aggregate top controls from all relevant flaws
+    const allControls = new Map();
+    classIds.forEach(cid => {
+      const detail = DATA.classDetails[cid];
+      if (detail && detail.controls) {
+        detail.controls.forEach(c => {
+          allControls.set(c, (allControls.get(c) || 0) + 1);
+        });
+      }
+    });
+    // Sort by frequency and take top 5
+    const topControls = [...allControls.entries()]
+      .sort((a,b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([c]) => c);
+
+    if (topControls.length > 0) {
+      const controlPills = el("div",{class:"pillrow"});
+      topControls.forEach(c => {
+        controlPills.appendChild(el("span",{class:"pill"}, c));
+      });
       b.appendChild(el("div",{class:"box"},
-        el("h4",{}, `Definition (${classIds[0]})`),
-        el("p",{}, c.definition),
-        el("h4",{}, "Context-specific manifestation"),
-        el("p",{}, c.ex.web || "")
+        el("h4",{}, "Priority controls"),
+        el("p",{style:"font-size:11px;color:var(--muted);margin-bottom:8px"}, "Implement these controls to address the underlying flaws:"),
+        controlPills
       ));
     }
   }
