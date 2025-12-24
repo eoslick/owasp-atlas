@@ -1013,16 +1013,46 @@ const DATA = {
     { id:"C10", name:"Observability & Attribution Gaps" }
   ],
   classDetails: {
-    C01:{ definition:"Untrusted input becomes instruction/intent.", exploit:"Interpretation boundary crossed → actions change.", controls:["Separate data/instructions","Allowlist actions","Policy gates","Context isolation","Adversarial testing"], ex:{web:"SQLi/XSS/SSRF",api:"Query/template injection",llm:"Prompt injection",agentic:"Goal/tool steering",hitl:"Persuasive approval framing"} },
-    C02:{ definition:"Identity/scope binding fails.", exploit:"Over-broad scopes → unauthorized action.", controls:["Least privilege","Per-action authZ","Short-lived creds","Tenant isolation","Audit"], ex:{web:"Broken access control",api:"BOLA/BFLA",llm:"Over-scoped tools",agentic:"Delegation chains",hitl:"Approval outside authority"} },
-    C03:{ definition:"Trusted component misuses authority.", exploit:"Low-priv routed through high-priv.", controls:["Bind intent","Re-validate provenance","No transitive trust","Separate duties","Detect spikes"], ex:{web:"CSRF/SSRF deputy",api:"Header/claim trust",llm:"Tool deputy",agentic:"Inter-agent delegation",hitl:"Human deputy"} },
-    C04:{ definition:"Untrusted content leads to execution.", exploit:"Text → eval/command/template → RCE.", controls:["No eval","Sandbox","Gate execution","Analyze artifacts","Allowlist tools"], ex:{web:"Template injection",api:"Deserialization/build triggers",llm:"Exec generated code",agentic:"Tool chains to shell",hitl:"Operator runs script"} },
-    C05:{ definition:"Poisoned state persists and is reused.", exploit:"Write → later read as trusted.", controls:["Provenance scoring","Namespace memory","Validate write+read","Retention/rollback","Avoid self-reinforcement"], ex:{web:"Cache/stored XSS",api:"Poisoned metadata",llm:"RAG/vector poisoning",agentic:"Long-term drift",hitl:"Biasing notes"} },
-    C06:{ definition:"Upstream artifacts are compromised.", exploit:"Tampered dependency/tool/model used.", controls:["SBOM/AIBOM","Pin+attest","Allowlist registries","Runtime integrity","Kill-switch"], ex:{web:"NPM compromise",api:"Gateway/SDK supply chain",llm:"Model/prompt packages",agentic:"Tool discovery expands chain",hitl:"Vendor trust abuse"} },
-    C07:{ definition:"Messages spoofed/replayed/downgraded.", exploit:"Weak integrity → false meaning.", controls:["mTLS/signing","Anti-replay","Downgrade resistance","Semantic validation","Secure discovery"], ex:{web:"Session/header spoofing",api:"JWT confusion/replay",llm:"Tampered tool results",agentic:"Spoofed agent comms",hitl:"Forged approval requests"} },
-    C08:{ definition:"Automation amplifies faults.", exploit:"Fan-out/retries → cascade.", controls:["Circuit breakers","Budgets/quotas","Isolation/rollout","Independent checks","Replay testing"], ex:{web:"Batch amplification",api:"Retry storms",llm:"Hallucination config",agentic:"Planner→executor fan-out",hitl:"Approval fatigue"} },
-    C09:{ definition:"Humans manipulated into unsafe actions.", exploit:"Authority bias → consent laundering.", controls:["UI friction","Provenance/risk summaries","Training/playbooks","Separate preview/effect","Approval anomaly alerts"], ex:{web:"Phishing",api:"Ops console pressure",llm:"Confident hallucinations",agentic:"Approval nudges",hitl:"Urgency escalation"} },
-    C10:{ definition:"Poor logging/lineage obscures cause.", exploit:"No attribution → attacks blend in.", controls:["Tamper-evident logs","End-to-end lineage","Telemetry/anomaly","Non-repudiation","Replayable traces"], ex:{web:"Weak monitoring",api:"No trace propagation",llm:"No source attribution",agentic:"No goal-state logs",hitl:"Approvals w/o provenance"} },
+    C01:{
+      description:"Attackers inject malicious instructions by embedding them within data that the system interprets as commands. This crosses the boundary between data and code, allowing untrusted input to alter application behavior. SQL injection, XSS, and prompt injection are all manifestations of this flaw.",
+      definition:"Untrusted input becomes instruction/intent.", exploit:"Interpretation boundary crossed → actions change.", controls:["Separate data/instructions","Allowlist actions","Policy gates","Context isolation","Adversarial testing"], ex:{web:"SQLi/XSS/SSRF",api:"Query/template injection",llm:"Prompt injection",agentic:"Goal/tool steering",hitl:"Persuasive approval framing"}
+    },
+    C02:{
+      description:"The system fails to properly verify that a user or component has permission to access specific resources or perform actions. Credentials may be valid but scoped too broadly, or authorization checks are missing entirely. This enables unauthorized data access and privilege escalation.",
+      definition:"Identity/scope binding fails.", exploit:"Over-broad scopes → unauthorized action.", controls:["Least privilege","Per-action authZ","Short-lived creds","Tenant isolation","Audit"], ex:{web:"Broken access control",api:"BOLA/BFLA",llm:"Over-scoped tools",agentic:"Delegation chains",hitl:"Approval outside authority"}
+    },
+    C03:{
+      description:"A trusted component is tricked into performing actions on behalf of an attacker by abusing its elevated privileges. The attacker routes requests through a high-privilege intermediary that doesn't verify the original intent. CSRF, SSRF, and confused deputy attacks exploit this pattern.",
+      definition:"Trusted component misuses authority.", exploit:"Low-priv routed through high-priv.", controls:["Bind intent","Re-validate provenance","No transitive trust","Separate duties","Detect spikes"], ex:{web:"CSRF/SSRF deputy",api:"Header/claim trust",llm:"Tool deputy",agentic:"Inter-agent delegation",hitl:"Human deputy"}
+    },
+    C04:{
+      description:"Untrusted content is executed as code, giving attackers direct control over the system. This occurs when user input reaches eval(), shell commands, or template engines without proper sanitization. Remote code execution is the most severe outcome of this flaw.",
+      definition:"Untrusted content leads to execution.", exploit:"Text → eval/command/template → RCE.", controls:["No eval","Sandbox","Gate execution","Analyze artifacts","Allowlist tools"], ex:{web:"Template injection",api:"Deserialization/build triggers",llm:"Exec generated code",agentic:"Tool chains to shell",hitl:"Operator runs script"}
+    },
+    C05:{
+      description:"Malicious data is written to persistent storage and later retrieved as trusted input. The poisoned state influences future decisions, queries, or outputs without re-validation. Cache poisoning, stored XSS, and RAG poisoning exploit the gap between write-time and read-time trust.",
+      definition:"Poisoned state persists and is reused.", exploit:"Write → later read as trusted.", controls:["Provenance scoring","Namespace memory","Validate write+read","Retention/rollback","Avoid self-reinforcement"], ex:{web:"Cache/stored XSS",api:"Poisoned metadata",llm:"RAG/vector poisoning",agentic:"Long-term drift",hitl:"Biasing notes"}
+    },
+    C06:{
+      description:"Attackers compromise upstream dependencies, packages, or models that the application trusts implicitly. Malicious code enters through libraries, container images, or AI model weights. The attack surface expands with every external component the system depends on.",
+      definition:"Upstream artifacts are compromised.", exploit:"Tampered dependency/tool/model used.", controls:["SBOM/AIBOM","Pin+attest","Allowlist registries","Runtime integrity","Kill-switch"], ex:{web:"NPM compromise",api:"Gateway/SDK supply chain",llm:"Model/prompt packages",agentic:"Tool discovery expands chain",hitl:"Vendor trust abuse"}
+    },
+    C07:{
+      description:"Messages between components are forged, replayed, or downgraded to weaker protocols. Attackers exploit weak integrity checks to inject false data or reuse captured credentials. Session hijacking, JWT confusion, and man-in-the-middle attacks target this weakness.",
+      definition:"Messages spoofed/replayed/downgraded.", exploit:"Weak integrity → false meaning.", controls:["mTLS/signing","Anti-replay","Downgrade resistance","Semantic validation","Secure discovery"], ex:{web:"Session/header spoofing",api:"JWT confusion/replay",llm:"Tampered tool results",agentic:"Spoofed agent comms",hitl:"Forged approval requests"}
+    },
+    C08:{
+      description:"Automated systems amplify errors through retry loops, fan-out operations, or cascading failures. A single fault triggers exponential resource consumption or propagates across dependent services. Without circuit breakers and rate limits, small issues become outages.",
+      definition:"Automation amplifies faults.", exploit:"Fan-out/retries → cascade.", controls:["Circuit breakers","Budgets/quotas","Isolation/rollout","Independent checks","Replay testing"], ex:{web:"Batch amplification",api:"Retry storms",llm:"Hallucination config",agentic:"Planner→executor fan-out",hitl:"Approval fatigue"}
+    },
+    C09:{
+      description:"Attackers manipulate humans into approving dangerous actions by exploiting trust, urgency, or authority bias. Confident-sounding requests bypass critical thinking, and approval fatigue leads to rubber-stamping. Social engineering targets the human as the weakest link in the security chain.",
+      definition:"Humans manipulated into unsafe actions.", exploit:"Authority bias → consent laundering.", controls:["UI friction","Provenance/risk summaries","Training/playbooks","Separate preview/effect","Approval anomaly alerts"], ex:{web:"Phishing",api:"Ops console pressure",llm:"Confident hallucinations",agentic:"Approval nudges",hitl:"Urgency escalation"}
+    },
+    C10:{
+      description:"Insufficient logging and tracing makes it impossible to detect attacks or determine root cause after incidents. Without attribution, malicious actions blend into normal traffic. Attackers exploit blind spots to operate undetected and cover their tracks.",
+      definition:"Poor logging/lineage obscures cause.", exploit:"No attribution → attacks blend in.", controls:["Tamper-evident logs","End-to-end lineage","Telemetry/anomaly","Non-repudiation","Replayable traces"], ex:{web:"Weak monitoring",api:"No trace propagation",llm:"No source attribution",agentic:"No goal-state logs",hitl:"Approvals w/o provenance"}
+    },
   },
   lists: [
     { id:"owasp_app", label:"OWASP Top 10 (Web Apps)", items:[
@@ -1834,9 +1864,8 @@ window.openClassModal = function(cid){
 
   const m = document.getElementById("classModal");
   document.getElementById("cmTitle").textContent = `${cid}: ${cls.name}`;
-  document.getElementById("cmDef").textContent = det.definition;
-  document.getElementById("cmExploit").textContent = det.exploit;
-  
+  document.getElementById("cmDesc").textContent = det.description;
+
   const cDiv = document.getElementById("cmControls");
   cDiv.innerHTML = "";
   det.controls.forEach(c => {
@@ -1845,7 +1874,7 @@ window.openClassModal = function(cid){
     p.textContent = c;
     cDiv.appendChild(p);
   });
-  
+
   m.classList.add("open");
 }
 
@@ -1899,16 +1928,12 @@ document.addEventListener("DOMContentLoaded", init);
 
 <!-- Class Detail Modal -->
 <div class="modalOverlay" id="classModal">
-  <div class="modal" style="max-width:500px">
+  <div class="modal" style="max-width:520px">
     <button class="modalClose" id="classModalClose" type="button">
       <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
     </button>
     <h3 id="cmTitle"></h3>
-    <div class="kv" id="cmDef"></div>
-    <div style="margin-top:12px">
-      <div style="font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; margin-bottom:4px">Exploit Mechanism</div>
-      <p class="note" id="cmExploit" style="margin-top:0"></p>
-    </div>
+    <p id="cmDesc" style="font-size:13px; line-height:1.6; color:rgba(255,255,255,.80); margin:12px 0 16px; border-left:3px solid var(--accent); padding-left:12px;"></p>
     <div style="margin-top:12px">
       <div style="font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; margin-bottom:4px">Proactive Controls</div>
       <div class="pillrow" id="cmControls"></div>
