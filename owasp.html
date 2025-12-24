@@ -1054,6 +1054,93 @@ const DATA = {
       definition:"Poor logging/lineage obscures cause.", exploit:"No attribution → attacks blend in.", controls:["Tamper-evident logs","End-to-end lineage","Telemetry/anomaly","Non-repudiation","Replayable traces"], ex:{web:"Weak monitoring",api:"No trace propagation",llm:"No source attribution",agentic:"No goal-state logs",hitl:"Approvals w/o provenance"}
     },
   },
+  // Context-aware defense recommendations for each architecture node + flaw combination
+  nodeDefenses: {
+    mobile: {
+      C01: "Sanitize all user inputs before sending to backend APIs. Use parameterized queries in local SQLite and escape data in WebViews.",
+      C02: "Store credentials in secure keychain/keystore, not SharedPreferences or UserDefaults. Implement biometric auth for sensitive operations.",
+      C09: "Show clear permission dialogs explaining data usage. Avoid dark patterns that trick users into granting excessive access.",
+      C10: "Log security events locally with tamper detection. Send anomaly signals to backend for correlation."
+    },
+    web: {
+      C01: "Escape all dynamic content before DOM insertion. Use Content-Security-Policy headers and avoid innerHTML with untrusted data.",
+      C02: "Store tokens in httpOnly cookies, not localStorage. Implement CSRF protection and validate sessions server-side.",
+      C03: "Enforce feature policies and sandbox iframes. Limit JavaScript capabilities to what the page actually needs.",
+      C09: "Use clear, honest UI copy for consent flows. Provide visible indicators when sensitive actions are occurring.",
+      C10: "Capture client-side errors and user actions for debugging. Include correlation IDs in all API requests."
+    },
+    cloudflare: {
+      C07: "Configure cache keys carefully to prevent serving stale authenticated content. Purge caches on sensitive data changes.",
+      C08: "Set appropriate rate limits and bot detection rules. Configure DDoS thresholds based on normal traffic patterns.",
+      C10: "Enable detailed access logs with client IPs and request metadata. Forward logs to SIEM for analysis."
+    },
+    waf: {
+      C01: "Deploy rules for SQLi, XSS, and command injection patterns. Tune signatures to minimize false positives while blocking attacks.",
+      C08: "Configure request size limits and payload inspection depth. Set connection limits per IP to prevent resource exhaustion.",
+      C10: "Log all blocked requests with full context. Alert on signature match patterns indicating active attack campaigns."
+    },
+    api_gw: {
+      C02: "Validate JWT signatures and expiration on every request. Enforce scope-based authorization before routing to services.",
+      C03: "Define explicit API contracts and reject requests that don't match schema. Implement allowlists for permitted operations.",
+      C07: "Validate request integrity with checksums for sensitive payloads. Reject replayed requests using nonce or timestamp validation.",
+      C08: "Enforce per-user and per-endpoint rate limits. Queue or reject requests when backend capacity is exceeded.",
+      C10: "Log all API calls with user identity, action, and response codes. Include trace IDs for distributed request tracking."
+    },
+    k8s: {
+      C02: "Use RBAC with least-privilege service accounts. Implement pod security policies and network policies between namespaces.",
+      C06: "Scan container images for vulnerabilities before deployment. Use signed images and verify signatures at admission.",
+      C07: "Enable mutual TLS between services via service mesh. Validate pod identity before allowing inter-service communication.",
+      C08: "Set resource limits and requests on all containers. Use horizontal pod autoscaling with defined boundaries.",
+      C10: "Aggregate logs from all pods to central collector. Enable audit logging for API server and track all resource changes."
+    },
+    svc: {
+      C01: "Use parameterized queries for all database access. Validate and sanitize inputs at service boundary before processing.",
+      C02: "Check authorization on every request, not just at API gateway. Implement object-level access control in business logic.",
+      C03: "Define explicit service boundaries and validate all inter-service calls. Reject requests outside defined operation scope.",
+      C04: "Encode outputs appropriately for each context (HTML, JSON, SQL). Never trust data from upstream services without validation.",
+      C08: "Implement circuit breakers and timeouts for downstream calls. Use bulkheads to isolate failures between components.",
+      C10: "Emit structured logs with correlation IDs for every operation. Track business events alongside technical metrics."
+    },
+    jobs: {
+      C02: "Run jobs with minimal required permissions. Validate job parameters and reject unauthorized scheduling requests.",
+      C04: "Sanitize job outputs before writing to queues or storage. Validate data format and content before downstream processing.",
+      C08: "Implement job queue depth limits and processing timeouts. Use dead-letter queues for failed jobs with retry limits.",
+      C10: "Log job start, completion, and failure with full context. Track job lineage to trace data transformations."
+    },
+    agent: {
+      C01: "Sanitize user prompts before LLM processing. Use structured output schemas to constrain and validate agent responses.",
+      C02: "Implement least-privilege tool permissions for each agent. Require explicit user approval for sensitive or destructive actions.",
+      C03: "Define strict action boundaries and validate all tool calls against an allowlist. Reject operations outside agent's authorized scope.",
+      C08: "Set token limits and timeout constraints on agent execution. Implement cost controls and terminate runaway agent loops.",
+      C09: "Present agent actions clearly to users before execution. Require confirmation for high-impact decisions with undo options.",
+      C10: "Log all agent decisions, tool calls, and reasoning chains. Maintain audit trail linking user requests to agent actions."
+    },
+    tools: {
+      C01: "Validate and sanitize all parameters passed to external tools. Use allowlists for permitted tool operations and arguments.",
+      C03: "Define explicit contracts for each tool integration. Reject calls that exceed tool's intended scope or capability.",
+      C06: "Vet third-party tools and APIs before integration. Monitor for security advisories and update or replace vulnerable dependencies.",
+      C07: "Verify tool response integrity with checksums or signatures. Detect and reject tampered responses from compromised integrations.",
+      C10: "Log all tool invocations with inputs, outputs, and timing. Track tool failures and anomalies for security analysis."
+    },
+    db: {
+      C02: "Implement row-level security and column-level encryption for sensitive data. Use separate credentials per service with minimal privileges.",
+      C05: "Enable integrity constraints and foreign keys. Use checksums for critical data and detect unauthorized modifications.",
+      C10: "Enable query logging and slow query analysis. Track all schema changes and privileged operations with attribution."
+    },
+    cache: {
+      C05: "Validate cache entries on read and detect corruption. Use versioned keys to prevent stale data serving.",
+      C08: "Set TTLs and eviction policies to prevent unbounded growth. Monitor cache hit rates and memory usage.",
+      C10: "Log cache invalidations and suspicious access patterns. Track cache poisoning attempts and unexpected miss rates."
+    },
+    vector: {
+      C01: "Sanitize text before embedding generation. Filter retrieved context to remove potentially injected instructions.",
+      C05: "Validate embedding integrity and detect poisoned vectors. Track data lineage from source documents through embeddings.",
+      C10: "Log all vector queries and retrieved contexts. Monitor for anomalous retrieval patterns indicating poisoning attempts."
+    },
+    siem: {
+      C10: "Ensure log integrity with append-only storage and tamper detection. Implement retention policies and access controls on audit data."
+    }
+  },
   lists: [
     { id:"owasp_app", label:"OWASP Top 10 (Web Apps)", items:[
       {id:"A01", label:"Broken Access Control"},
@@ -1756,35 +1843,29 @@ function renderDetailPanel(){
     });
     b.appendChild(el("div",{class:"box"}, el("h4",{}, "Threat overview"), threatList));
 
-    // How to Defend section - show controls ONLY for the selected item's flaws at each node
+    // How to Defend section - show context-aware defenses for each touched node
     const touched = DATA.arch.nodes.filter(n=> n.classes.some(cid=>classIds.includes(cid)));
-    const defenseList = el("div",{style:"display:flex;flex-direction:column;gap:10px"});
+    const defenseList = el("div",{style:"display:flex;flex-direction:column;gap:14px"});
     touched.forEach(n => {
       // Get only the flaws relevant to this selection that exist at this node
       const relevantFlaws = classIds.filter(cid => n.classes.includes(cid));
-      // Collect controls only from the relevant flaws
-      const controls = [];
+      const nodeDefenses = DATA.nodeDefenses[n.id] || {};
+
+      // Build defense entries for each relevant flaw at this node
+      const defenseEntries = el("div",{style:"display:flex;flex-direction:column;gap:6px;margin-top:4px"});
       relevantFlaws.forEach(cid => {
-        const detail = DATA.classDetails[cid];
-        if (detail && detail.controls) {
-          // Take first 2 controls from each relevant flaw
-          detail.controls.slice(0, 2).forEach(c => {
-            if (!controls.includes(c)) controls.push(c);
-          });
+        const defenseText = nodeDefenses[cid];
+        if (defenseText) {
+          defenseEntries.appendChild(el("div",{style:"font-size:11px;line-height:1.4"},
+            el("span",{style:"color:var(--accent);font-weight:600;margin-right:6px"}, `[${cid}]`),
+            el("span",{style:"color:var(--muted)"}, defenseText)
+          ));
         }
       });
 
-      const actionText = controls.length > 0
-        ? controls.slice(0, 3).join(". ") + "."
-        : "Review security controls.";
-
-      // Show which flaws apply here
-      const flawTags = relevantFlaws.map(cid => cid).join(", ");
-
-      defenseList.appendChild(el("div",{style:"font-size:12px;line-height:1.5"},
-        el("strong",{style:"color:var(--ink);display:block;margin-bottom:2px"}, n.name),
-        el("span",{style:"color:var(--accent);font-size:10px;margin-right:6px"}, `[${flawTags}]`),
-        el("span",{style:"color:var(--muted)"}, actionText)
+      defenseList.appendChild(el("div",{style:"font-size:12px;line-height:1.5;border-left:2px solid var(--accent);padding-left:10px"},
+        el("strong",{style:"color:var(--ink);display:block"}, n.name),
+        defenseEntries
       ));
     });
     b.appendChild(el("div",{class:"box"},
