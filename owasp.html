@@ -1709,34 +1709,34 @@ function renderDetailPanel(){
     });
     b.appendChild(el("div",{class:"box"}, el("h4",{}, "Mapped core flaws (click for details)"), ul));
 
-    // How to Defend section - show components with ALL their core flaw controls
+    // How to Defend section - show controls ONLY for the selected item's flaws at each node
     const touched = DATA.arch.nodes.filter(n=> n.classes.some(cid=>classIds.includes(cid)));
     const defenseList = el("div",{style:"display:flex;flex-direction:column;gap:10px"});
     touched.forEach(n => {
-      // Get ALL core flaws for this node (comprehensive defense)
-      const allNodeFlaws = n.classes;
-      // Collect top controls from all flaws at this node
-      const controlCount = new Map();
-      allNodeFlaws.forEach(cid => {
+      // Get only the flaws relevant to this selection that exist at this node
+      const relevantFlaws = classIds.filter(cid => n.classes.includes(cid));
+      // Collect controls only from the relevant flaws
+      const controls = [];
+      relevantFlaws.forEach(cid => {
         const detail = DATA.classDetails[cid];
         if (detail && detail.controls) {
-          detail.controls.forEach(c => {
-            controlCount.set(c, (controlCount.get(c) || 0) + 1);
+          // Take first 2 controls from each relevant flaw
+          detail.controls.slice(0, 2).forEach(c => {
+            if (!controls.includes(c)) controls.push(c);
           });
         }
       });
-      // Take top 3 controls by frequency, format as short sentences
-      const topControls = [...controlCount.entries()]
-        .sort((a,b) => b[1] - a[1])
-        .slice(0, 3)
-        .map(([c]) => c);
 
-      const actionText = topControls.length > 0
-        ? topControls.join(". ") + "."
+      const actionText = controls.length > 0
+        ? controls.slice(0, 3).join(". ") + "."
         : "Review security controls.";
+
+      // Show which flaws apply here
+      const flawTags = relevantFlaws.map(cid => cid).join(", ");
 
       defenseList.appendChild(el("div",{style:"font-size:12px;line-height:1.5"},
         el("strong",{style:"color:var(--ink);display:block;margin-bottom:2px"}, n.name),
+        el("span",{style:"color:var(--accent);font-size:10px;margin-right:6px"}, `[${flawTags}]`),
         el("span",{style:"color:var(--muted)"}, actionText)
       ));
     });
