@@ -1931,10 +1931,11 @@ document.addEventListener("DOMContentLoaded", init);
       position: 'left'
     },
     {
-      target: '#archGrid',
+      target: '.archPanel',
       title: 'Architecture Diagram',
-      desc: 'When you select a vulnerability, the architecture lights up to show which components are affected. This helps you understand where in your system to implement defenses.',
-      position: 'top'
+      desc: 'When you select a vulnerability, the architecture lights up to show which components are affected. Drag nodes to rearrange, scroll to pan, and use the zoom controls to navigate.',
+      position: 'top',
+      highlight: 'panel'
     },
     {
       target: '.archNode[data-nodeid="svc"]',
@@ -1998,47 +1999,77 @@ document.addEventListener("DOMContentLoaded", init);
     prevBtn.style.display = currentStep === 0 ? 'none' : 'block';
     nextBtn.textContent = currentStep === tourSteps.length - 1 ? 'Finish' : 'Next';
 
-    // Position spotlight
+    // Position spotlight - constrain to viewport for large elements
     const rect = target.getBoundingClientRect();
     const padding = 8;
-    spotlight.style.left = (rect.left - padding) + 'px';
-    spotlight.style.top = (rect.top - padding) + 'px';
-    spotlight.style.width = (rect.width + padding * 2) + 'px';
-    spotlight.style.height = (rect.height + padding * 2) + 'px';
+    const viewportHeight = window.innerHeight;
+    const viewportWidth = window.innerWidth;
+
+    // For large panels, constrain spotlight to visible portion
+    let spotLeft = Math.max(0, rect.left - padding);
+    let spotTop = Math.max(0, rect.top - padding);
+    let spotWidth = Math.min(rect.width + padding * 2, viewportWidth - spotLeft);
+    let spotHeight = Math.min(rect.height + padding * 2, viewportHeight - spotTop);
+
+    // Cap max height for very tall elements
+    if (step.highlight === 'panel' && spotHeight > 500) {
+      spotHeight = Math.min(spotHeight, 400);
+    }
+
+    spotlight.style.left = spotLeft + 'px';
+    spotlight.style.top = spotTop + 'px';
+    spotlight.style.width = spotWidth + 'px';
+    spotlight.style.height = spotHeight + 'px';
 
     // Position tooltip
     const tooltipRect = tooltip.getBoundingClientRect();
     const gap = 16;
     let left, top;
 
+    // Use constrained spotlight rect for positioning
+    const spotRect = {
+      left: spotLeft,
+      top: spotTop,
+      right: spotLeft + spotWidth,
+      bottom: spotTop + spotHeight,
+      width: spotWidth,
+      height: spotHeight
+    };
+
     switch (step.position) {
       case 'bottom':
-        left = rect.left + rect.width / 2 - tooltipRect.width / 2;
-        top = rect.bottom + gap;
+        left = spotRect.left + spotRect.width / 2 - tooltipRect.width / 2;
+        top = spotRect.bottom + gap;
         break;
       case 'top':
-        left = rect.left + rect.width / 2 - tooltipRect.width / 2;
-        top = rect.top - tooltipRect.height - gap;
+        left = spotRect.left + spotRect.width / 2 - tooltipRect.width / 2;
+        top = spotRect.top - tooltipRect.height - gap;
+        // If tooltip would go off top, put it inside at top
+        if (top < 16) {
+          top = spotRect.top + gap;
+        }
         break;
       case 'left':
-        left = rect.left - tooltipRect.width - gap;
-        top = rect.top + rect.height / 2 - tooltipRect.height / 2;
+        left = spotRect.left - tooltipRect.width - gap;
+        top = spotRect.top + spotRect.height / 2 - tooltipRect.height / 2;
         break;
       case 'right':
-        left = rect.right + gap;
-        top = rect.top + rect.height / 2 - tooltipRect.height / 2;
+        left = spotRect.right + gap;
+        top = spotRect.top + spotRect.height / 2 - tooltipRect.height / 2;
         break;
     }
 
     // Keep tooltip in viewport
-    left = Math.max(16, Math.min(left, window.innerWidth - tooltipRect.width - 16));
-    top = Math.max(16, Math.min(top, window.innerHeight - tooltipRect.height - 16));
+    left = Math.max(16, Math.min(left, viewportWidth - tooltipRect.width - 16));
+    top = Math.max(16, Math.min(top, viewportHeight - tooltipRect.height - 16));
 
     tooltip.style.left = left + 'px';
     tooltip.style.top = top + 'px';
 
-    // Scroll target into view if needed
-    target.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+    // Scroll target into view if needed (only for smaller elements)
+    if (rect.height < 500) {
+      target.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+    }
   }
 
   prevBtn.addEventListener('click', () => {
