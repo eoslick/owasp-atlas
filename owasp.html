@@ -561,6 +561,131 @@ svg {
   stroke: rgba(255,255,255,.85);
 }
 
+/* Quick Start modal */
+.quickStartOverlay{
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1100;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity .3s, visibility .3s;
+  backdrop-filter: blur(4px);
+}
+.quickStartOverlay.open{opacity: 1; visibility: visible;}
+
+.quickStartModal{
+  background: linear-gradient(180deg, rgba(30,35,50,.98), rgba(20,25,38,.98));
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: var(--radius);
+  padding: 28px 32px;
+  max-width: 560px;
+  width: 92%;
+  box-shadow: 0 32px 80px rgba(0,0,0,.6);
+  position: relative;
+}
+.quickStartModal h2{
+  margin: 0 0 8px;
+  font-size: 22px;
+  font-weight: 800;
+  color: rgba(255,255,255,.95);
+  letter-spacing: -0.02em;
+}
+.quickStartModal .subtitle{
+  font-size: 14px;
+  color: rgba(255,255,255,.65);
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+.quickStartModal .insight{
+  background: linear-gradient(180deg, rgba(0,215,200,.12), rgba(0,215,200,.06));
+  border: 1px solid rgba(0,215,200,.35);
+  border-radius: 12px;
+  padding: 16px 18px;
+  margin-bottom: 20px;
+}
+.quickStartModal .insight p{
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: rgba(255,255,255,.88);
+}
+.quickStartModal .insight strong{
+  color: var(--accent);
+}
+.quickStartModal .steps{
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.quickStartModal .step{
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.quickStartModal .stepNum{
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.08);
+  border: 1px solid rgba(255,255,255,.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(255,255,255,.80);
+  flex-shrink: 0;
+}
+.quickStartModal .stepText{
+  font-size: 13px;
+  color: rgba(255,255,255,.75);
+  line-height: 1.5;
+  padding-top: 3px;
+}
+.quickStartModal .stepText strong{
+  color: rgba(255,255,255,.92);
+}
+.quickStartModal .actions{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.quickStartModal .skipLabel{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: rgba(255,255,255,.55);
+  cursor: pointer;
+}
+.quickStartModal .skipLabel input{
+  accent-color: var(--accent);
+}
+.quickStartModal .startBtn{
+  font-size: 14px;
+  font-weight: 700;
+  padding: 12px 24px;
+  border-radius: 999px;
+  border: 1px solid rgba(0,215,200,.60);
+  background: linear-gradient(180deg, rgba(0,215,200,.25), rgba(0,215,200,.12));
+  color: rgba(255,255,255,.95);
+  cursor: pointer;
+  transition: transform .15s, box-shadow .15s, background .15s;
+  box-shadow: 0 8px 24px rgba(0,0,0,.3);
+}
+.quickStartModal .startBtn:hover{
+  transform: translateY(-1px);
+  background: linear-gradient(180deg, rgba(0,215,200,.35), rgba(0,215,200,.18));
+  box-shadow: 0 12px 32px rgba(0,0,0,.4);
+}
+
 /* Help modal */
 .helpBtn{
   background: none;
@@ -1560,6 +1685,41 @@ window.openClassModal = function(cid){
 document.addEventListener("DOMContentLoaded", init);
 </script>
 
+<!-- Quick Start Modal -->
+<div class="quickStartOverlay" id="quickStartModal">
+  <div class="quickStartModal">
+    <h2>Welcome to OWASP Atlas</h2>
+    <p class="subtitle">Understand how your architecture influences security findings</p>
+
+    <div class="insight">
+      <p><strong>The key insight:</strong> Every OWASP vulnerability maps to specific architectural components. By understanding these connections, you can see exactly <strong>where in your system</strong> each security risk originates — and where to focus your defenses.</p>
+    </div>
+
+    <div class="steps">
+      <div class="step">
+        <div class="stepNum">1</div>
+        <div class="stepText"><strong>Select an OWASP list</strong> — Choose from Web, API, LLM, Agentic, Mobile, or Kubernetes top 10 lists</div>
+      </div>
+      <div class="step">
+        <div class="stepNum">2</div>
+        <div class="stepText"><strong>Click any vulnerability</strong> — The architecture diagram highlights which components are involved</div>
+      </div>
+      <div class="step">
+        <div class="stepNum">3</div>
+        <div class="stepText"><strong>Explore the connections</strong> — See the core flaws and understand how different vulnerabilities share common architectural touch points</div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <label class="skipLabel">
+        <input type="checkbox" id="skipQuickStart">
+        Don't show this again
+      </label>
+      <button class="startBtn" id="quickStartClose">Get Started</button>
+    </div>
+  </div>
+</div>
+
 <!-- Help Modal -->
 <div class="modalOverlay" id="helpModal">
   <div class="modal">
@@ -1591,6 +1751,34 @@ document.addEventListener("DOMContentLoaded", init);
 
 <script>
 (function(){
+  // Quick Start modal
+  const QUICK_START_KEY = "owasp.quickStart.dismissed";
+  const qsModal = document.getElementById("quickStartModal");
+  const qsClose = document.getElementById("quickStartClose");
+  const qsSkip = document.getElementById("skipQuickStart");
+
+  // Show quick start on load if not dismissed
+  if (!localStorage.getItem(QUICK_START_KEY)) {
+    setTimeout(() => qsModal.classList.add("open"), 400);
+  }
+
+  qsClose.addEventListener("click", () => {
+    if (qsSkip.checked) {
+      localStorage.setItem(QUICK_START_KEY, "true");
+    }
+    qsModal.classList.remove("open");
+  });
+
+  qsModal.addEventListener("click", (e) => {
+    if (e.target === qsModal) {
+      if (qsSkip.checked) {
+        localStorage.setItem(QUICK_START_KEY, "true");
+      }
+      qsModal.classList.remove("open");
+    }
+  });
+
+  // Help modal
   const modal = document.getElementById("helpModal");
   document.querySelectorAll('.helpBtn').forEach(btn => {
     btn.addEventListener("click", () => modal.classList.add("open"));
@@ -1598,7 +1786,8 @@ document.addEventListener("DOMContentLoaded", init);
   modal.addEventListener("click", (e) => {
     if (e.target === modal) modal.classList.remove("open");
   });
-  
+
+  // Class detail modal
   const cModal = document.getElementById("classModal");
   const cClose = document.getElementById("classModalClose");
   cClose.addEventListener("click", () => cModal.classList.remove("open"));
@@ -1608,6 +1797,7 @@ document.addEventListener("DOMContentLoaded", init);
 
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") {
+      qsModal.classList.remove("open");
       modal.classList.remove("open");
       cModal.classList.remove("open");
     }
