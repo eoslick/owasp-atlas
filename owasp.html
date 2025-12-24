@@ -951,7 +951,6 @@ svg {
     <section class="panel archPanel">
       <div class="panelHeader">
         <h2>Architecture Context</h2>
-        <div class="tabs"><span class="pill">Click nodes to focus a subsystem</span></div>
       </div>
 
       <div class="content">
@@ -966,8 +965,6 @@ svg {
               </div>
               <button class="archBtn primary" id="saveLayoutBtn" type="button">Save layout</button>
               <button class="archBtn" id="resetLayoutBtn" type="button">Reset layout</button>
-              <button class="archBtn" id="exportLayoutBtn" type="button">Export JSON</button>
-              <button class="archBtn" id="importLayoutBtn" type="button">Import JSON</button>
             </div>
             <div class="archHint">Drag nodes to rearrange • Hold <span class="kbd">Shift</span> to snap • Scroll to pan • Ctrl+scroll to zoom</div>
 
@@ -1261,39 +1258,6 @@ function resetLayout(){
   drawArchEdges();
   toast("Layout reset");
 }
-function exportLayout(){
-  const layout = loadLayout() || {};
-  const blob = new Blob([JSON.stringify(layout, null, 2)], {type:"application/json"});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "architecture-layout.json";
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-}
-async function importLayout(){
-  const input = document.createElement("input");
-  input.type = "file";
-  input.accept = "application/json";
-  input.onchange = async () => {
-    const file = input.files?.[0];
-    if (!file) return;
-    const text = await file.text();
-    try{
-      const obj = JSON.parse(text);
-      localStorage.setItem(LAYOUT_KEY, JSON.stringify(obj));
-      renderArchitecture();
-      updateHighlights();
-      drawArchEdges();
-      toast("Layout imported");
-    } catch {
-      toast("Invalid JSON", true);
-    }
-  };
-  input.click();
-}
 
 /* ===== Tiny toast ===== */
 let toastTimer = null;
@@ -1464,12 +1428,8 @@ function init(){
   // Architecture toolbar
   const saveBtn = document.getElementById('saveLayoutBtn');
   const resetBtn = document.getElementById('resetLayoutBtn');
-  const exportBtn = document.getElementById('exportLayoutBtn');
-  const importBtn = document.getElementById('importLayoutBtn');
   saveBtn?.addEventListener('click', saveLayout);
   resetBtn?.addEventListener('click', resetLayout);
-  exportBtn?.addEventListener('click', exportLayout);
-  importBtn?.addEventListener('click', importLayout);
 
   // Zoom controls
   $("#zoomInBtn")?.addEventListener('click', () => setZoom(zoomLevel + ZOOM_STEP));
