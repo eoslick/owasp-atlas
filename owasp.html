@@ -1941,11 +1941,13 @@ document.addEventListener("DOMContentLoaded", init);
       target: '.archNode[data-nodeid="svc"]',
       title: 'Interactive Nodes',
       desc: 'Click any architecture node to flip the view — see which core flaws tend to land at that component. Drag nodes to customize the layout for your own architecture.',
-      position: 'top'
+      position: 'right',
+      scrollContainer: '#archGrid'
     }
   ];
 
   let currentStep = 0;
+  let hasScrolledForStep = false;
   const overlay = document.getElementById('tourOverlay');
   const spotlight = document.getElementById('tourSpotlight');
   const tooltip = document.getElementById('tourTooltip');
@@ -1960,6 +1962,7 @@ document.addEventListener("DOMContentLoaded", init);
 
   function startTour() {
     currentStep = 0;
+    hasScrolledForStep = false;
     overlay.classList.add('active');
     renderStep();
   }
@@ -1980,6 +1983,22 @@ document.addEventListener("DOMContentLoaded", init);
         endTour();
       }
       return;
+    }
+
+    // If target is inside a scroll container, scroll it into view first (only once per step)
+    if (step.scrollContainer && !hasScrolledForStep) {
+      const container = document.querySelector(step.scrollContainer);
+      if (container) {
+        hasScrolledForStep = true;
+        // Scroll the container to center the target
+        const scrollLeft = target.offsetLeft - container.offsetWidth / 2 + target.offsetWidth / 2;
+        const scrollTop = target.offsetTop - container.offsetHeight / 2 + target.offsetHeight / 2;
+        container.scrollTo({ left: Math.max(0, scrollLeft), top: Math.max(0, scrollTop), behavior: 'smooth' });
+
+        // Re-render after scroll completes to position spotlight correctly
+        setTimeout(() => renderStep(), 400);
+        return;
+      }
     }
 
     // Update text
@@ -2075,6 +2094,7 @@ document.addEventListener("DOMContentLoaded", init);
   prevBtn.addEventListener('click', () => {
     if (currentStep > 0) {
       currentStep--;
+      hasScrolledForStep = false;
       renderStep();
     }
   });
@@ -2082,6 +2102,7 @@ document.addEventListener("DOMContentLoaded", init);
   nextBtn.addEventListener('click', () => {
     if (currentStep < tourSteps.length - 1) {
       currentStep++;
+      hasScrolledForStep = false;
       renderStep();
     } else {
       endTour();
@@ -2093,12 +2114,20 @@ document.addEventListener("DOMContentLoaded", init);
 
   document.getElementById('startTourBtn').addEventListener('click', startTour);
 
-  // Handle window resize
-  window.addEventListener('resize', () => {
+  // Handle window resize and scroll
+  let scrollTimeout;
+  const handleReposition = () => {
     if (overlay.classList.contains('active')) {
       renderStep();
     }
-  });
+  };
+
+  window.addEventListener('resize', handleReposition);
+  window.addEventListener('scroll', () => {
+    // Debounce scroll updates for performance
+    clearTimeout(scrollTimeout);
+    scrollTimeout = setTimeout(handleReposition, 10);
+  }, { passive: true });
 
   // Handle escape key
   document.addEventListener('keydown', (e) => {
