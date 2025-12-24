@@ -1496,7 +1496,11 @@ function init(){
   });
   window.addEventListener("resize", ()=>{drawArchEdges();});
 
-  setTimeout(()=>selectItem("owasp_llm","LLM01",true), 250);
+  // Select first item from the default list
+  const defaultList = byListId[activeTab];
+  if (defaultList && defaultList.items.length > 0) {
+    setTimeout(()=>selectItem(activeTab, defaultList.items[0].id, true), 250);
+  }
 }
 
 function renderListSelect(){
