@@ -686,6 +686,138 @@ svg {
   box-shadow: 0 12px 32px rgba(0,0,0,.4);
 }
 
+/* Tour Feature */
+.tourOverlay{
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity .3s, visibility .3s;
+}
+.tourOverlay.active{
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+.tourBackdrop{
+  position: fixed;
+  inset: 0;
+  z-index: 2001;
+}
+.tourSpotlight{
+  position: absolute;
+  z-index: 2002;
+  border-radius: 12px;
+  box-shadow: 0 0 0 9999px rgba(0,0,0,.75);
+  transition: all .4s cubic-bezier(.4,0,.2,1);
+  pointer-events: none;
+}
+.tourTooltip{
+  position: absolute;
+  z-index: 2003;
+  background: linear-gradient(180deg, rgba(35,40,55,.98), rgba(25,30,45,.98));
+  border: 1px solid rgba(255,255,255,.15);
+  border-radius: 14px;
+  padding: 20px 22px;
+  max-width: 320px;
+  width: max-content;
+  box-shadow: 0 20px 50px rgba(0,0,0,.5);
+  transition: all .4s cubic-bezier(.4,0,.2,1);
+  pointer-events: auto;
+}
+.tourTooltip .tourStep{
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  margin-bottom: 6px;
+}
+.tourTooltip h4{
+  margin: 0 0 8px;
+  font-size: 15px;
+  font-weight: 700;
+  color: rgba(255,255,255,.95);
+}
+.tourTooltip p{
+  margin: 0 0 16px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: rgba(255,255,255,.72);
+}
+.tourTooltip .tourActions{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.tourTooltip .tourDots{
+  display: flex;
+  gap: 6px;
+}
+.tourTooltip .tourDot{
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.25);
+  transition: background .2s;
+}
+.tourTooltip .tourDot.active{
+  background: var(--accent);
+}
+.tourTooltip .tourBtns{
+  display: flex;
+  gap: 8px;
+}
+.tourTooltip .tourBtn{
+  font-size: 12px;
+  font-weight: 600;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.15);
+  background: rgba(255,255,255,.06);
+  color: rgba(255,255,255,.85);
+  cursor: pointer;
+  transition: all .15s;
+}
+.tourTooltip .tourBtn:hover{
+  background: rgba(255,255,255,.12);
+  border-color: rgba(255,255,255,.25);
+}
+.tourTooltip .tourBtn.primary{
+  background: linear-gradient(180deg, rgba(0,215,200,.28), rgba(0,215,200,.15));
+  border-color: rgba(0,215,200,.55);
+  color: rgba(255,255,255,.95);
+}
+.tourTooltip .tourBtn.primary:hover{
+  background: linear-gradient(180deg, rgba(0,215,200,.38), rgba(0,215,200,.22));
+}
+.tourTrigger{
+  font-size: 12px;
+  font-weight: 600;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(255,255,255,.04);
+  color: rgba(255,255,255,.75);
+  cursor: pointer;
+  transition: all .15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.tourTrigger:hover{
+  background: rgba(255,255,255,.08);
+  border-color: rgba(0,215,200,.40);
+  color: rgba(255,255,255,.92);
+}
+.tourTrigger svg{
+  width: 14px;
+  height: 14px;
+}
+
 /* Help modal */
 .helpBtn{
   background: none;
@@ -758,7 +890,15 @@ svg {
     <h1>OWASP Atlas: Core Flaws, Real Architecture</h1>
     <div class="tagline">Every OWASP list describes the same ten flaws — just in different contexts.</div>
     <p class="tagline" style="margin-top:10px;">Prompt injection (LLM), SQL injection (Web), and goal hijacking (Agentic) are all the same flaw: untrusted input alters instructions. Each has its own solution and it only needs to be addressed once.</p>
-
+    <div style="margin-top:14px;">
+      <button class="tourTrigger" id="startTourBtn" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <polygon points="10 8 16 12 10 16 10 8"></polygon>
+        </svg>
+        Take a Tour
+      </button>
+    </div>
   </div>
 
   <div class="layout">
@@ -1749,7 +1889,194 @@ document.addEventListener("DOMContentLoaded", init);
   </div>
 </div>
 
+<!-- Tour Overlay -->
+<div class="tourOverlay" id="tourOverlay">
+  <div class="tourBackdrop" id="tourBackdrop"></div>
+  <div class="tourSpotlight" id="tourSpotlight"></div>
+  <div class="tourTooltip" id="tourTooltip">
+    <div class="tourStep" id="tourStepLabel">Step 1 of 5</div>
+    <h4 id="tourTitle">Welcome</h4>
+    <p id="tourDesc">Tour description here</p>
+    <div class="tourActions">
+      <div class="tourDots" id="tourDots"></div>
+      <div class="tourBtns">
+        <button class="tourBtn" id="tourSkipBtn">Skip</button>
+        <button class="tourBtn" id="tourPrevBtn">Back</button>
+        <button class="tourBtn primary" id="tourNextBtn">Next</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
+(function(){
+  // Tour functionality
+  const tourSteps = [
+    {
+      target: '#listSelect',
+      title: 'Choose an OWASP List',
+      desc: 'Start by selecting which OWASP Top 10 list you want to explore. Each list covers a different domain: Web apps, APIs, LLMs, Agentic systems, Mobile, or Kubernetes.',
+      position: 'bottom'
+    },
+    {
+      target: '.sidebar .list',
+      title: 'Select a Vulnerability',
+      desc: 'Click any item to see how it maps to your architecture. Each vulnerability is linked to one or more "core flaws" — the fundamental security weaknesses that manifest across all OWASP lists.',
+      position: 'right'
+    },
+    {
+      target: '#detailPanel',
+      title: 'Core Flaws Panel',
+      desc: 'This panel shows which core flaws apply to your selection. Click any flaw to see its definition, exploit mechanism, and recommended controls.',
+      position: 'left'
+    },
+    {
+      target: '#archGrid',
+      title: 'Architecture Diagram',
+      desc: 'When you select a vulnerability, the architecture lights up to show which components are affected. This helps you understand where in your system to implement defenses.',
+      position: 'top'
+    },
+    {
+      target: '.archNode[data-nodeid="svc"]',
+      title: 'Interactive Nodes',
+      desc: 'Click any architecture node to flip the view — see which core flaws tend to land at that component. Drag nodes to customize the layout for your own architecture.',
+      position: 'top'
+    }
+  ];
+
+  let currentStep = 0;
+  const overlay = document.getElementById('tourOverlay');
+  const spotlight = document.getElementById('tourSpotlight');
+  const tooltip = document.getElementById('tourTooltip');
+  const stepLabel = document.getElementById('tourStepLabel');
+  const titleEl = document.getElementById('tourTitle');
+  const descEl = document.getElementById('tourDesc');
+  const dotsEl = document.getElementById('tourDots');
+  const prevBtn = document.getElementById('tourPrevBtn');
+  const nextBtn = document.getElementById('tourNextBtn');
+  const skipBtn = document.getElementById('tourSkipBtn');
+  const backdrop = document.getElementById('tourBackdrop');
+
+  function startTour() {
+    currentStep = 0;
+    overlay.classList.add('active');
+    renderStep();
+  }
+
+  function endTour() {
+    overlay.classList.remove('active');
+  }
+
+  function renderStep() {
+    const step = tourSteps[currentStep];
+    const target = document.querySelector(step.target);
+
+    if (!target) {
+      if (currentStep < tourSteps.length - 1) {
+        currentStep++;
+        renderStep();
+      } else {
+        endTour();
+      }
+      return;
+    }
+
+    // Update text
+    stepLabel.textContent = `Step ${currentStep + 1} of ${tourSteps.length}`;
+    titleEl.textContent = step.title;
+    descEl.textContent = step.desc;
+
+    // Update dots
+    dotsEl.innerHTML = '';
+    for (let i = 0; i < tourSteps.length; i++) {
+      const dot = document.createElement('div');
+      dot.className = 'tourDot' + (i === currentStep ? ' active' : '');
+      dotsEl.appendChild(dot);
+    }
+
+    // Update buttons
+    prevBtn.style.display = currentStep === 0 ? 'none' : 'block';
+    nextBtn.textContent = currentStep === tourSteps.length - 1 ? 'Finish' : 'Next';
+
+    // Position spotlight
+    const rect = target.getBoundingClientRect();
+    const padding = 8;
+    spotlight.style.left = (rect.left - padding) + 'px';
+    spotlight.style.top = (rect.top - padding) + 'px';
+    spotlight.style.width = (rect.width + padding * 2) + 'px';
+    spotlight.style.height = (rect.height + padding * 2) + 'px';
+
+    // Position tooltip
+    const tooltipRect = tooltip.getBoundingClientRect();
+    const gap = 16;
+    let left, top;
+
+    switch (step.position) {
+      case 'bottom':
+        left = rect.left + rect.width / 2 - tooltipRect.width / 2;
+        top = rect.bottom + gap;
+        break;
+      case 'top':
+        left = rect.left + rect.width / 2 - tooltipRect.width / 2;
+        top = rect.top - tooltipRect.height - gap;
+        break;
+      case 'left':
+        left = rect.left - tooltipRect.width - gap;
+        top = rect.top + rect.height / 2 - tooltipRect.height / 2;
+        break;
+      case 'right':
+        left = rect.right + gap;
+        top = rect.top + rect.height / 2 - tooltipRect.height / 2;
+        break;
+    }
+
+    // Keep tooltip in viewport
+    left = Math.max(16, Math.min(left, window.innerWidth - tooltipRect.width - 16));
+    top = Math.max(16, Math.min(top, window.innerHeight - tooltipRect.height - 16));
+
+    tooltip.style.left = left + 'px';
+    tooltip.style.top = top + 'px';
+
+    // Scroll target into view if needed
+    target.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+  }
+
+  prevBtn.addEventListener('click', () => {
+    if (currentStep > 0) {
+      currentStep--;
+      renderStep();
+    }
+  });
+
+  nextBtn.addEventListener('click', () => {
+    if (currentStep < tourSteps.length - 1) {
+      currentStep++;
+      renderStep();
+    } else {
+      endTour();
+    }
+  });
+
+  skipBtn.addEventListener('click', endTour);
+  backdrop.addEventListener('click', endTour);
+
+  document.getElementById('startTourBtn').addEventListener('click', startTour);
+
+  // Handle window resize
+  window.addEventListener('resize', () => {
+    if (overlay.classList.contains('active')) {
+      renderStep();
+    }
+  });
+
+  // Handle escape key
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && overlay.classList.contains('active')) {
+      endTour();
+    }
+  });
+})();
+
 (function(){
   // Quick Start modal
   const QUICK_START_KEY = "owasp.quickStart.dismissed";
