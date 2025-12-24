@@ -1054,6 +1054,59 @@ const DATA = {
       definition:"Poor logging/lineage obscures cause.", exploit:"No attribution → attacks blend in.", controls:["Tamper-evident logs","End-to-end lineage","Telemetry/anomaly","Non-repudiation","Replayable traces"], ex:{web:"Weak monitoring",api:"No trace propagation",llm:"No source attribution",agentic:"No goal-state logs",hitl:"Approvals w/o provenance"}
     },
   },
+  // Descriptions for proactive security controls
+  controlDescriptions: {
+    "Separate data/instructions": "Keep user-supplied data strictly separated from executable code or instructions. Use parameterized queries, prepared statements, and template engines that auto-escape.",
+    "Allowlist actions": "Define an explicit list of permitted operations and reject anything not on the list. Prefer allowlists over blocklists for security-critical decisions.",
+    "Policy gates": "Implement policy enforcement points that validate requests against defined rules before execution. Use OPA, Cedar, or similar policy engines.",
+    "Context isolation": "Run untrusted code or process untrusted input in isolated environments (sandboxes, containers, VMs) with minimal privileges.",
+    "Adversarial testing": "Regularly test systems with adversarial inputs, red team exercises, and fuzzing to find injection vulnerabilities before attackers do.",
+    "Least privilege": "Grant only the minimum permissions required for each component, user, or service to perform its function. Regularly audit and revoke excess permissions.",
+    "Per-action authZ": "Check authorization for every action, not just at login. Verify the user has permission for the specific resource and operation being requested.",
+    "Short-lived creds": "Use tokens and credentials that expire quickly. Implement refresh token rotation and revocation capabilities.",
+    "Tenant isolation": "Ensure strict separation between tenants in multi-tenant systems. Use separate databases, encryption keys, or namespaces per tenant.",
+    "Audit": "Log all security-relevant actions with sufficient detail for forensic analysis. Include who, what, when, where, and outcome.",
+    "Bind intent": "Cryptographically bind the original user intent to the request throughout its lifecycle. Use signed tokens that include the intended action.",
+    "Re-validate provenance": "Verify the origin and chain of custody for requests at each trust boundary. Don't assume upstream validation was performed.",
+    "No transitive trust": "Don't automatically trust requests just because they come from a trusted component. Each component should validate independently.",
+    "Separate duties": "Require multiple parties or components to complete sensitive operations. No single entity should control the entire process.",
+    "Detect spikes": "Monitor for unusual patterns in privileged operations that might indicate confused deputy attacks. Alert on anomalous delegation patterns.",
+    "No eval": "Avoid eval(), exec(), and similar dynamic code execution functions. If unavoidable, use strict sandboxing and input validation.",
+    "Sandbox": "Execute untrusted code in restricted environments with limited system access, network isolation, and resource constraints.",
+    "Gate execution": "Require explicit approval or additional verification before executing generated or dynamic code.",
+    "Analyze artifacts": "Scan and analyze code, binaries, and other artifacts for malicious content before execution or deployment.",
+    "Allowlist tools": "Maintain an explicit list of approved tools, commands, and integrations. Block or prompt for anything not on the list.",
+    "Provenance scoring": "Track and score the trustworthiness of data based on its source, age, and how it was validated. Weight decisions accordingly.",
+    "Namespace memory": "Isolate stored data by context, user, or session to prevent cross-contamination of poisoned data.",
+    "Validate write+read": "Validate data both when writing to storage and when reading it back. Don't assume stored data is trustworthy.",
+    "Retention/rollback": "Implement data retention policies and maintain the ability to rollback to known-good states if poisoning is detected.",
+    "Avoid self-reinforcement": "Prevent systems from using their own outputs as inputs for future decisions without human validation.",
+    "SBOM/AIBOM": "Maintain Software and AI Bills of Materials listing all dependencies, models, and their versions for vulnerability tracking.",
+    "Pin+attest": "Pin dependencies to specific versions and verify their integrity using checksums, signatures, or attestations.",
+    "Allowlist registries": "Only pull dependencies from approved, vetted registries. Block or alert on packages from unknown sources.",
+    "Runtime integrity": "Continuously verify the integrity of running code and loaded dependencies. Detect tampering or unexpected changes.",
+    "Kill-switch": "Implement mechanisms to quickly disable or rollback compromised components without full system downtime.",
+    "mTLS/signing": "Use mutual TLS and message signing to authenticate both parties and ensure message integrity in all communications.",
+    "Anti-replay": "Include nonces, timestamps, or sequence numbers in messages to prevent replay attacks. Reject duplicate or stale messages.",
+    "Downgrade resistance": "Prevent attackers from forcing systems to use weaker protocols or cipher suites. Enforce minimum security standards.",
+    "Semantic validation": "Validate that message content makes sense in context, not just that it's well-formed. Check for logical consistency.",
+    "Secure discovery": "Use authenticated service discovery mechanisms. Verify the identity of services before connecting to them.",
+    "Circuit breakers": "Automatically stop calling failing services to prevent cascade failures. Implement fallback behaviors and gradual recovery.",
+    "Budgets/quotas": "Set and enforce resource limits per user, tenant, or operation. Prevent any single actor from exhausting shared resources.",
+    "Isolation/rollout": "Deploy changes incrementally with isolation between deployment stages. Limit blast radius of failures.",
+    "Independent checks": "Use multiple independent validation mechanisms. Don't rely on a single check that could be bypassed or fail.",
+    "Replay testing": "Regularly replay production traffic patterns in test environments to validate system behavior under real conditions.",
+    "UI friction": "Add deliberate friction (confirmations, delays, re-authentication) for high-risk actions to prevent rushed approvals.",
+    "Provenance/risk summaries": "Show users clear information about where requests originated and their risk level before requesting approval.",
+    "Training/playbooks": "Train humans to recognize manipulation attempts. Provide clear playbooks for handling suspicious requests.",
+    "Separate preview/effect": "Allow users to preview the effects of actions before committing. Make the preview clearly distinguishable from execution.",
+    "Approval anomaly alerts": "Alert when approval patterns deviate from normal (unusual times, high volume, new request types).",
+    "Tamper-evident logs": "Use append-only, cryptographically secured logs that reveal any attempts at modification or deletion.",
+    "End-to-end lineage": "Track the complete path of data and decisions from origin through all transformations to final output.",
+    "Telemetry/anomaly": "Collect comprehensive telemetry and use anomaly detection to identify suspicious patterns automatically.",
+    "Non-repudiation": "Ensure actors cannot deny their actions. Use cryptographic signatures and secure timestamps.",
+    "Replayable traces": "Capture enough context in traces to reproduce and debug issues. Enable deterministic replay of past events."
+  },
   // Context-aware defense recommendations for each architecture node + flaw combination
   nodeDefenses: {
     mobile: {
@@ -1892,10 +1945,14 @@ function renderDetailPanel(){
     if (topControls.length > 0) {
       const controlPills = el("div",{class:"pillrow"});
       topControls.forEach(c => {
-        controlPills.appendChild(el("span",{class:"pill"}, c));
+        controlPills.appendChild(el("button",{
+          class:"pill",
+          style:"cursor:pointer; border-color:var(--accent); color:var(--ink);",
+          onclick:`window.openControlModal('${c.replace(/'/g, "\\'")}')`
+        }, c));
       });
       b.appendChild(el("div",{class:"box"},
-        el("h4",{}, "Priority controls"),
+        el("h4",{}, "Priority controls (click for details)"),
         el("p",{style:"font-size:11px;color:var(--muted);margin-bottom:8px"}, "Implement these controls to address the underlying flaws:"),
         controlPills
       ));
@@ -1967,12 +2024,24 @@ window.openClassModal = function(cid){
   const cDiv = document.getElementById("cmControls");
   cDiv.innerHTML = "";
   det.controls.forEach(c => {
-    const p = document.createElement("span");
+    const p = document.createElement("button");
     p.className = "pill";
+    p.style.cssText = "cursor:pointer; border-color:var(--accent); color:var(--ink);";
     p.textContent = c;
+    p.onclick = () => window.openControlModal(c);
     cDiv.appendChild(p);
   });
 
+  m.classList.add("open");
+}
+
+window.openControlModal = function(controlName){
+  const desc = DATA.controlDescriptions[controlName];
+  if(!desc) return;
+
+  const m = document.getElementById("controlModal");
+  document.getElementById("ctrlTitle").textContent = controlName;
+  document.getElementById("ctrlDesc").textContent = desc;
   m.classList.add("open");
 }
 
@@ -2045,9 +2114,21 @@ document.addEventListener("DOMContentLoaded", init);
     <h3 id="cmTitle"></h3>
     <p id="cmDesc" style="font-size:13px; line-height:1.6; color:rgba(255,255,255,.80); margin:12px 0 16px; border-left:3px solid var(--accent); padding-left:12px;"></p>
     <div style="margin-top:12px">
-      <div style="font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; margin-bottom:4px">Proactive Controls</div>
+      <div style="font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; margin-bottom:4px">Proactive Controls (click for details)</div>
       <div class="pillrow" id="cmControls"></div>
     </div>
+  </div>
+</div>
+
+<!-- Control Detail Modal -->
+<div class="modalOverlay" id="controlModal">
+  <div class="modal" style="max-width:480px">
+    <button class="modalClose" id="controlModalClose" type="button">
+      <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+    </button>
+    <div style="font-size:11px; font-weight:700; color:var(--accent); text-transform:uppercase; margin-bottom:6px">Proactive Control</div>
+    <h3 id="ctrlTitle" style="margin-bottom:12px"></h3>
+    <p id="ctrlDesc" style="font-size:13px; line-height:1.6; color:rgba(255,255,255,.80); border-left:3px solid var(--accent); padding-left:12px;"></p>
   </div>
 </div>
 
@@ -2400,12 +2481,21 @@ document.addEventListener("DOMContentLoaded", init);
     if (e.target === cModal) cModal.classList.remove("open");
   });
 
+  // Control detail modal
+  const ctrlModal = document.getElementById("controlModal");
+  const ctrlClose = document.getElementById("controlModalClose");
+  ctrlClose.addEventListener("click", () => ctrlModal.classList.remove("open"));
+  ctrlModal.addEventListener("click", (e) => {
+    if (e.target === ctrlModal) ctrlModal.classList.remove("open");
+  });
+
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") {
       qsModal.classList.remove("open");
       modal.classList.remove("open");
       cfModal.classList.remove("open");
       cModal.classList.remove("open");
+      ctrlModal.classList.remove("open");
     }
   });
 })();
