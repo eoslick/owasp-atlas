@@ -111,12 +111,23 @@
     .panelSubhead{padding:8px 14px 0;font-size:12px;color:var(--muted);line-height:1.4}
     .listSelect{
       width:100%;
-      background:rgba(11,15,26,.04);
-      border:1px solid var(--border);
+      background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.04));
+      border:1px solid rgba(255,255,255,.18);
       border-radius:8px;
-      color:var(--ink);
+      color:rgba(255,255,255,.92);
       font-size:12px;
-      padding:6px 10px;
+      font-weight:600;
+      padding:8px 12px;
+      cursor:pointer;
+      transition: border-color .15s ease, background .15s ease;
+    }
+    .listSelect:hover{
+      border-color: rgba(0,215,200,.45);
+      background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.06));
+    }
+    .listSelect:focus{
+      outline: none;
+      border-color: rgba(0,215,200,.60);
     }
 
     .tabs{display:flex; gap:6px; flex-wrap:wrap}
