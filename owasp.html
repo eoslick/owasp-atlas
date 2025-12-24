@@ -1739,6 +1739,19 @@ function renderDetailPanel(){
     });
     b.appendChild(el("div",{class:"box"}, el("h4",{}, "Mapped core flaws (click for details)"), ul));
 
+    // Threat descriptions for each mapped flaw
+    const threatList = el("div",{style:"display:flex;flex-direction:column;gap:12px"});
+    classIds.forEach(cid => {
+      const detail = DATA.classDetails[cid];
+      if (detail && detail.description) {
+        threatList.appendChild(el("div",{style:"font-size:12px;line-height:1.5"},
+          el("strong",{style:"color:var(--accent);display:block;margin-bottom:4px"}, `${cid}: ${byClassId[cid].name}`),
+          el("span",{style:"color:var(--muted)"}, detail.description)
+        ));
+      }
+    });
+    b.appendChild(el("div",{class:"box"}, el("h4",{}, "Threat overview"), threatList));
+
     // How to Defend section - show controls ONLY for the selected item's flaws at each node
     const touched = DATA.arch.nodes.filter(n=> n.classes.some(cid=>classIds.includes(cid)));
     const defenseList = el("div",{style:"display:flex;flex-direction:column;gap:10px"});
