@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>DRY Lens + Architecture Context (OWASP)</title>
+  <title>OWASP Atlas: Core Flaws, Real Architecture</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -1412,7 +1412,7 @@ function el(tag, attrs={}, ...children){
 
 
 /* ===== Layout persistence (localStorage) ===== */
-const LAYOUT_KEY = "dryLens.arch.layout.v1";
+const LAYOUT_KEY = "owaspAtlas.arch.layout.v1";
 function loadLayout(){
   try{
     const raw = localStorage.getItem(LAYOUT_KEY);
@@ -1767,7 +1767,6 @@ function focusNode(nodeId){
   const node = DATA.arch.nodes.find(x=>x.id===nodeId);
   node.classes.forEach(cid=>selectedClasses.add(cid));
   updateHighlights();
-  updateDRYMeter();
   renderDetailPanel();
 }
 
@@ -1779,7 +1778,6 @@ function selectItem(listId,itemId,replace=true){
   selectedKeys.add(key);
   (mapFrom.get(key)||[]).forEach(cid=>selectedClasses.add(cid));
   updateHighlights();
-  updateDRYMeter();
   renderDetailPanel();
 }
 
@@ -1789,7 +1787,6 @@ function clearSelection(){
   focusedNode=null;
   lastClickType=null;
   updateHighlights();
-  updateDRYMeter();
   renderDetailPanel();
 }
 
@@ -1819,23 +1816,6 @@ function updateHighlights(){
   const selCount = $("#selCount");
   if (selCount) selCount.textContent = String(selectedKeys.size || selectedClasses.size);
   drawArchEdges();
-}
-
-function updateDRYMeter(){
-  const meter = $("#dryMeter");
-  if (!meter) return;
-  if (lastClickType==="node" && focusedNode){
-    const node = DATA.arch.nodes.find(x=>x.id===focusedNode);
-    meter.textContent = `${node.classes.length} classes touch this node`;
-    return;
-  }
-  const totalItems = selectedKeys.size;
-  if (!totalItems){ meter.textContent="—"; return; }
-  const cset = new Set();
-  for (const k of selectedKeys){ (mapFrom.get(k)||[]).forEach(cid=>cset.add(cid)); }
-  const ratio = 1 - (cset.size / totalItems);
-  const pct = Math.round(clamp(ratio,0,0.98)*100);
-  meter.textContent = `${pct}% duplication compressed`;
 }
 
 function renderDetailPanel(){
