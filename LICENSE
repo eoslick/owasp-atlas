@@ -1,0 +1,49 @@
+# Dual License
+
+This software is available under two licensing options:
+
+## 1. Open Source License (AGPL-3.0)
+
+Copyright (c) 2025 Evan Oslick
+
+This program is free software: you can redistribute it and/or modify it under
+the terms of the GNU Affero General Public License as published by the Free
+Software Foundation, either version 3 of the License, or (at your option) any
+later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License along
+with this program. If not, see <https://www.gnu.org/licenses/>.
+
+**In summary:** You may use this software freely if you release your complete
+source code under the AGPL-3.0 or a compatible open source license. This
+includes making source available for software accessed over a network.
+
+## 2. Commercial License
+
+If you wish to use this software in a proprietary (closed-source) application,
+or if you do not want to comply with the AGPL-3.0 requirements, you must obtain
+a commercial license.
+
+For commercial licensing inquiries, contact: eoslick@snakeeeyessoftware.com
+
+### Commercial License Exception
+
+True Positives and its affiliates are hereby granted a perpetual, worldwide,
+non-exclusive, royalty-bearing commercial license to use, modify, and
+distribute this software in proprietary applications under the terms of a
+separate commercial agreement.
+
+---
+
+## Which License Applies to You?
+
+| Your Use Case | License Required |
+|---------------|------------------|
+| Open source project (AGPL-compatible) | AGPL-3.0 (free) |
+| Internal tools with source available | AGPL-3.0 (free) |
+| Closed-source / proprietary product | Commercial license (paid) |
+| SaaS without source disclosure | Commercial license (paid) |
